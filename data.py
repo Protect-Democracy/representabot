@@ -80,7 +80,7 @@ class SenateData():
 
     def get_party_rep(self, voters):
         """ Gets the ratio of Yea votes made by the non-majority party
-            to the majority party.
+            to the majority party. This is where the bipartisanship score comes from. 
         """
         votes = voters.loc[
             lambda x: (x["party"].isin(["D", "R"])) & (x["vote_cast"] == "Yea")
