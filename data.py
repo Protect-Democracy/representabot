@@ -97,7 +97,7 @@ class SenateData():
         vote_number = vote["vote_number"]
         vote_tally = vote["vote_tally"]
         vote_detail = self.get_senate_vote(vote_number)
-        # TODO: Truncate vote_question / vote_result
+        
         if isinstance(vote["question"], dict):
             vote_question = vote["question"]["#text"].lower()
         else:
@@ -109,6 +109,8 @@ class SenateData():
 
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
         rep = self.get_vote_rep(voters)
+        # TODO: come up with system for making the "different" tweets 
+        tweet_text += " 🚨" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
         tweet_text += "\n% represented by… "
 
         for v in ["Yea", "Nay"]:
