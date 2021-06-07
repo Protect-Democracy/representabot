@@ -81,10 +81,9 @@ def generate_tweet_text(congress, session, vote):
 
 def run():
     api = create_api()
-
     tweets = load()
-
-    senate_data = cd.get_senate_list(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
+    senate_obj = cd.SenateData(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
+    senate_data = senate_obj.get_senate_list()
     new_tweets = pd.DataFrame(
         columns=["tweet_id", "congress", "session", "date", "vote"], dtype=str
     )
@@ -99,11 +98,11 @@ def run():
         if tweets.query(query).empty:
             try:
                 # TODO: Tweet the tweet and save the tweet id
-                text = generate_tweet_text(
-                    cd.CONGRESS_NUMBER, cd.SENATE_SESSION, item
-                )
+                text = senate_obj.process_vote(item["vote_number"])
                 #api.update_status(text)
-                logging.info(f"TWEETING… {item['vote_number']}")
+                logging.info("TWEETING…")
+                logging.info(text)
+                logging.info("*" * 40)
                 new_tweets = new_tweets.append({
                     "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
                     "congress": cd.CONGRESS_NUMBER,
@@ -114,7 +113,7 @@ def run():
             except Exception as e:
                 # Tweet failed for some reason
                 logging.error("Tweet failed")
-                logging.error(e)
+                raise e
     if not new_tweets.empty:
         save(tweets.append(new_tweets))
 
