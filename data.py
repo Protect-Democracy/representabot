@@ -28,9 +28,12 @@ class SenateData():
         state_pop_data.loc[:, "state"] = (
             state_pop_data["NAME"].map(lambda x: states.lookup(x).abbr)
         )
-
-        self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))
+        # if we want to change back to including DC later for reasons
+        # self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))[0][CENSUS_POPULATION_CODE]
         self.state_pop_data = state_pop_data
+        self.us_pop_data = self.state_pop_data.loc[
+            lambda x: x["state"] != "DC", CENSUS_POPULATION_CODE
+        ].sum()
 
         self.congress_num = congress_num
         self.session_num = session_num
@@ -70,7 +73,7 @@ class SenateData():
         votes = voters.groupby("vote_cast")[[CENSUS_POPULATION_CODE]].sum()
         votes.loc[:, "rep"] = (
             votes[CENSUS_POPULATION_CODE]
-            / (int(self.us_pop_data[0][CENSUS_POPULATION_CODE]) * 2)
+            / (int(self.us_pop_data) * 2)
         )
         votes = votes[["rep"]].to_dict()["rep"]
         for v in ["Yea", "Nay"]:
@@ -82,12 +85,17 @@ class SenateData():
         """ Gets the ratio of Yea votes made by the non-majority party
             to the majority party. This is where the bipartisanship score comes from. 
         """
-        votes = voters.loc[
-            lambda x: (x["party"].isin(["D", "R"])) & (x["vote_cast"] == "Yea")
+        yea_votes = voters.loc[
+            lambda x: x["vote_cast"] == "Yea"
+        ]
+        votes = yea_votes.loc[
+            lambda x: x["party"].isin(["D", "R"])
         ]
         votes = votes.groupby("party")[["lis_member_id"]].count()
         if len(votes) < 2:
             return 0.0
+        elif len(yea_votes["lis_member_id"]) == 100:
+            return 1
         else:
             return (votes["lis_member_id"].min() / votes["lis_member_id"].max())
 
