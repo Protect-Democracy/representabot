@@ -10,7 +10,7 @@ import tweepy
 from google.cloud import storage
 
 import bot_config
-import congress_data as cd
+import data as cd
 
 
 # Load all environment variables from `.env` file
