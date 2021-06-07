@@ -3,6 +3,7 @@ import logging
 import os
 import random  # TODO: REMOVE THIS
 
+import dotenv
 import pandas as pd
 import tweepy
 
@@ -11,10 +12,13 @@ from google.cloud import storage
 import bot_config
 import congress_data as cd
 
-# Need to set up Google Cloud Storage.
-# See: https://cloud.google.com/storage/docs/reference/libraries
-GC_BUCKET_NAME = "representabot-bucket-1"
-GC_FILENAME = "tweets.csv"
+
+# Load all environment variables from `.env` file
+dotenv.load_dotenv()
+logging.basicConfig(level=logging.INFO)
+
+GC_BUCKET_NAME = os.environ.get("GC_BUCKET_NAME")
+GC_FILENAME = os.environ.get("GC_FILENAME")
 
 
 def load():
@@ -56,6 +60,9 @@ def run():
     tweets = load()
 
     senate_data = cd.get_senate_list(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
+    new_tweets = pd.DataFrame(
+        columns=["tweet_id", "congress", "session", "date", "vote"], dtype=str
+    )
     for item in senate_data["vote_summary"]["votes"]["vote"]:
         query = (
             "congress == @cd.CONGRESS_NUMBER "
@@ -68,15 +75,18 @@ def run():
             # TODO: Tweet the tweet and save the tweet id
             # Create a tweet
             #api.update_status("Hello World")
-            print("TWEETING…")
-            tweets = tweets.append({
+            logging.info("TWEETING…")
+            new_tweets = tweets.append({
                 "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
                 "congress": cd.CONGRESS_NUMBER,
                 "session": cd.SENATE_SESSION,
                 "date": item["vote_date"],
                 "vote": item["vote_number"]
             }, ignore_index=True)
-    save(tweets)
+    if not new_tweets.empty:
+        save(tweets.append(new_tweets))
+    else:
+        logging.info("No new votes to tweet")
 
 
 if __name__ == "__main__":

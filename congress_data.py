@@ -1,6 +1,8 @@
 import json
+import os
 import requests
 
+import dotenv
 import pandas as pd
 import xmltodict
 
@@ -8,10 +10,11 @@ from census import Census
 from us import states
 
 
-CENSUS_API_KEY = "dc5b0c9e8a915b1671f4afb3ac607d4805d62bfc"
+dotenv.load_dotenv()
+CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY")
+CONGRESS_NUMBER = os.environ.get("CONGRESS_NUMBER")
+SENATE_SESSION = os.environ.get("SENATE_SESSION")
 CENSUS_POPULATION_CODE = "B01003_001E"
-CONGRESS_NUMBER = "117"
-SENATE_SESSION = "1"
 
 
 def get_population_data():

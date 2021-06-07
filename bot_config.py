@@ -1,24 +1,16 @@
 import logging
 import os
 
+import dotenv
 import tweepy
 
+dotenv.load_dotenv()
+
 def create_api():
-    consumer_key = os.environ.get(
-        "CONSUMER_KEY", "M6IetCvtvfbCZNdgkQC0WBSTN"
-    )
-    consumer_secret = os.environ.get(
-        "CONSUMER_SECRET",
-        "ktAtCa6sAGAvoKMyaJOBebRzpHsuy8kPInqLIElwOAHkOKqLrQ"
-    )
-    access_token = os.getenv(
-        "ACCESS_TOKEN",
-        "1374098610619617282-qCvUfbowpQ5RF2rmj9A4GcnzxgpExT"
-    )
-    access_token_secret = os.environ.get(
-        "ACCESS_TOKEN_SECRET",
-        "5jfvy2lPjihSz2xNmdhkKObeXO0vZIeBkkSR0TR1yufqU"
-    )
+    consumer_key = os.environ.get("CONSUMER_KEY")
+    consumer_secret = os.environ.get("CONSUMER_SECRET")
+    access_token = os.getenv("ACCESS_TOKEN")
+    access_token_secret = os.environ.get("ACCESS_TOKEN_SECRET")
 
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
