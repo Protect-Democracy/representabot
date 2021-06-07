@@ -1,5 +1,7 @@
 # representabot
 
+<!--- TODO: add links! --> 
+
 ## About me
 
 Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the latest votes in the U.S. Senate. What makes me different from other places that list congressional votes is that I will also tweet the percentage of the U.S. population represented by yeas and nays. This way, I can track how often this democratic institution is anti-majoritarian. 
