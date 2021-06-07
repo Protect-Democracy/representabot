@@ -46,6 +46,11 @@ def get_senate_vote(congress_num, session_num, vote_num):
     return xmltodict.parse(resp_data.content)
 
 
+def process_vote(congress_num, session_num, vote_num):
+    """ Combines Census population data with Senate vote data """
+    pass
+
+
 if __name__ == "__main__":
     senate_data = get_senate_list(CONGRESS_NUMBER, SENATE_SESSION)
     state_pop_data, us_pop_data = get_population_data()
