@@ -39,7 +39,6 @@ def create_api():
     except Exception as e:
         logging.error("Error creating API", exc_info=True)
         raise e
-    logging.info("API created")
     return api
 
 
@@ -76,6 +75,10 @@ def save(df):
         df.to_csv(GC_FILENAME, index=False)
 
 
+def generate_tweet_text(congress, session, vote):
+    pass
+
+
 def run():
     api = create_api()
 
@@ -94,21 +97,26 @@ def run():
         )
 
         if tweets.query(query).empty:
-            # TODO: Tweet the tweet and save the tweet id
-            # Create a tweet
-            #api.update_status("Hello World")
-            logging.info("TWEETING…")
-            new_tweets = tweets.append({
-                "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
-                "congress": cd.CONGRESS_NUMBER,
-                "session": cd.SENATE_SESSION,
-                "date": item["vote_date"],
-                "vote": item["vote_number"]
-            }, ignore_index=True)
+            try:
+                # TODO: Tweet the tweet and save the tweet id
+                #text = generate_tweet_text(
+                #    cd.CONGRESS_NUMBER, cd.SENATE_SESSION, item["vote_number"]
+                #)
+                #api.update_status(text)
+                logging.info("TWEETING…")
+                new_tweets = tweets.append({
+                    "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
+                    "congress": cd.CONGRESS_NUMBER,
+                    "session": cd.SENATE_SESSION,
+                    "date": item["vote_date"],
+                    "vote": item["vote_number"]
+                }, ignore_index=True)
+            except Exception as e:
+                # Tweet failed for some reason
+                logging.error("Tweet failed")
+                logging.error(e)
     if not new_tweets.empty:
         save(tweets.append(new_tweets))
-    else:
-        logging.info("No new votes to tweet")
 
 
 if __name__ == "__main__":
