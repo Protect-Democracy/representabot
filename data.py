@@ -97,7 +97,7 @@ class SenateData():
         vote_number = vote["vote_number"]
         vote_tally = vote["vote_tally"]
         vote_detail = self.get_senate_vote(vote_number)
-        
+
         if isinstance(vote["question"], dict):
             vote_question = vote["question"]["#text"].lower()
         else:
