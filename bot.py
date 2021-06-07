@@ -98,7 +98,7 @@ def run():
         if tweets.query(query).empty:
             try:
                 # TODO: Tweet the tweet and save the tweet id
-                text = senate_obj.process_vote(item["vote_number"])
+                text = senate_obj.process_vote(item)
                 #api.update_status(text)
                 logging.info("TWEETING…")
                 logging.info(text)
