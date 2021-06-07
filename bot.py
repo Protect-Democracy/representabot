@@ -76,7 +76,7 @@ def save(df):
 
 
 def generate_tweet_text(congress, session, vote):
-    pass
+    return f"CONGRESS: {congress}, SESSION: {session}, VOTE: {vote}"
 
 
 def run():
@@ -99,12 +99,12 @@ def run():
         if tweets.query(query).empty:
             try:
                 # TODO: Tweet the tweet and save the tweet id
-                #text = generate_tweet_text(
-                #    cd.CONGRESS_NUMBER, cd.SENATE_SESSION, item["vote_number"]
-                #)
+                text = generate_tweet_text(
+                    cd.CONGRESS_NUMBER, cd.SENATE_SESSION, item
+                )
                 #api.update_status(text)
-                logging.info("TWEETING…")
-                new_tweets = tweets.append({
+                logging.info(f"TWEETING… {item['vote_number']}")
+                new_tweets = new_tweets.append({
                     "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
                     "congress": cd.CONGRESS_NUMBER,
                     "session": cd.SENATE_SESSION,
