@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import random  # TODO: REMOVE THIS
 
 import dotenv
 import pandas as pd
@@ -21,6 +20,7 @@ GC_FILENAME = os.environ.get("GC_FILENAME")
 
 
 def create_api():
+    """ Creates Tweepy API object for use later """
     consumer_key = os.environ.get("CONSUMER_KEY")
     consumer_secret = os.environ.get("CONSUMER_SECRET")
     access_token = os.getenv("ACCESS_TOKEN")
@@ -75,11 +75,13 @@ def save(df):
         df.to_csv(GC_FILENAME, index=False)
 
 
-def generate_tweet_text(congress, session, vote):
-    return f"CONGRESS: {congress}, SESSION: {session}, VOTE: {vote}"
-
-
-def run():
+def run(request):
+    """ Read a list of previous tweets from Google Cloud Storage
+        and Senate roll call vote data. Tweets out any untweeted
+        votes based on the functions contained in data.py.
+        Parameter is required by Google Cloud Functions and not
+        used.
+    """
     api = create_api()
     tweets = load()
     senate_obj = cd.SenateData(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
@@ -95,16 +97,15 @@ def run():
             "and vote == @item['vote_number']"
         )
 
+        # If the current vote isn't already processed, then process it
         if tweets.query(query).empty:
             try:
-                # TODO: Tweet the tweet and save the tweet id
                 text = senate_obj.process_vote(item["vote_number"])
-                #api.update_status(text)
-                logging.info("TWEETING…")
-                logging.info(text)
-                logging.info("*" * 40)
+                status = api.update_status(text)
+                # Keep track of new tweets to be reconciled with old
+                # tweets later
                 new_tweets = new_tweets.append({
-                    "tweet_id": random.randint(1, 10001),  # TODO: CHANGE THIS
+                    "tweet_id": status.id_str,
                     "congress": cd.CONGRESS_NUMBER,
                     "session": cd.SENATE_SESSION,
                     "date": item["vote_date"],
@@ -115,8 +116,13 @@ def run():
                 logging.error("Tweet failed")
                 raise e
     if not new_tweets.empty:
+        logging.info(f"Tweeted {len(new_tweets)} new votes")
         save(tweets.append(new_tweets))
+        # Function needs to return something to work as a Google Cloud Function
+        return json.dumps(new_tweets["tweet_id"].to_json())
+    else:
+        return "{}"  # Empty JSON object
 
 
 if __name__ == "__main__":
-    run()
+    run(None)
