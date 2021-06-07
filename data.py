@@ -80,7 +80,7 @@ class SenateData():
 
     def get_party_rep(self, voters):
         """ Gets the ratio of Yea votes made by the non-majority party
-            to the majority party.
+            to the majority party. This is where the bipartisanship score comes from. 
         """
         votes = voters.loc[
             lambda x: (x["party"].isin(["D", "R"])) & (x["vote_cast"] == "Yea")
@@ -91,23 +91,32 @@ class SenateData():
         else:
             return (votes["lis_member_id"].min() / votes["lis_member_id"].max())
 
-    def process_vote(self, vote_num):
+    def process_vote(self, vote):
         """ Process a vote into tweet text form """
         tweet_text = ""
-        vote_detail = self.get_senate_vote(vote_num)
-        # TODO: Truncate vote_question / vote_result
-        vote_question = vote_detail["roll_call_vote"]["vote_question_text"]
-        vote_result = vote_detail["roll_call_vote"]["vote_result"].upper()
-        bill = f"{vote_question}: {vote_result}"
+        vote_number = vote["vote_number"]
+        vote_tally = vote["vote_tally"]
+        vote_detail = self.get_senate_vote(vote_number)
+
+        if isinstance(vote["question"], dict):
+            vote_question = vote["question"]["#text"].lower()
+        else:
+            vote_question = vote["question"].lower()
+        vote_question += (" " + vote["issue"])
+        vote_result = vote["result"].upper()
+        bill = f"Vote {int(vote_number)} {vote_question}: {vote_result}"
         tweet_text += bill
 
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
         rep = self.get_vote_rep(voters)
+        # TODO: come up with system for making the "different" tweets 
+        tweet_text += " 🌾 👀 🌾" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
         tweet_text += "\n% represented by… "
 
         for v in ["Yea", "Nay"]:
             per = "{0:.1%}".format(rep[v])
-            tweet_text += f"{v.lower()}: {per}; "
+            tally = vote_tally[v.lower() + "s"]
+            tweet_text += f"{v.lower()}: {per} ({tally}); "
         party = self.get_party_rep(voters)
         tweet_text += "% bipartisan… {0:.1%}".format(party)
         return tweet_text
@@ -117,4 +126,4 @@ if __name__ == "__main__":
     senate_data = senate_obj.get_senate_list()
 
     for item in senate_data["vote_summary"]["votes"]["vote"][:10]:
-        print(senate_obj.process_vote(item["vote_number"]))
+        print(senate_obj.process_vote(item))

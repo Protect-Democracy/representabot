@@ -100,7 +100,7 @@ def run(request):
         # If the current vote isn't already processed, then process it
         if tweets.query(query).empty:
             try:
-                text = senate_obj.process_vote(item["vote_number"])
+                text = senate_obj.process_vote(item)
                 status = api.update_status(text)
                 # Keep track of new tweets to be reconciled with old
                 # tweets later
