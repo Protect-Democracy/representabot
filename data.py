@@ -110,7 +110,7 @@ class SenateData():
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
         rep = self.get_vote_rep(voters)
         # TODO: come up with system for making the "different" tweets 
-        tweet_text += " 🚨" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
+        tweet_text += " 🌾👀🌾" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
         tweet_text += "\n% represented by… "
 
         for v in ["Yea", "Nay"]:
