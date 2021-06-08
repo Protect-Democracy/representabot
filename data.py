@@ -82,23 +82,42 @@ class SenateData():
         return votes
 
     def get_party_rep(self, voters):
-        """ Gets the ratio of Yea votes made by the non-majority party
-            to the majority party. This is where the bipartisanship score comes from. 
-        """
-        yea_votes = voters.loc[
-            lambda x: x["vote_cast"] == "Yea"
-        ]
-        votes = yea_votes.loc[
-            lambda x: x["party"].isin(["D", "R"])
-        ]
-        votes = votes.groupby("party")[["lis_member_id"]].count()
-        if len(votes) < 2:
-            return 0.0
-        elif len(yea_votes["lis_member_id"]) == 100:
-            return 1
+        """ Returns the vote count on a measure and the major party breakdown of those votes. """
+        idx = "lis_member_id"
+        yea_votes = voters.loc[lambda x: x["vote_cast"] == "Yea"]
+        nay_votes = voters.loc[lambda x: x["vote_cast"] == "Nay"]  
+        
+        vote_dict = {}
+        
+        vote_dict["yea_vote"] = {}
+        vote_dict["yea_vote"]["total"] = yea_votes[idx].count()
+         
+        vote_dict["nay_vote"] = {}
+        vote_dict["nay_vote"]["total"] = nay_votes[idx].count()
+        
+        for p in ["D", "R"]:
+            vote_dict["yea_vote"][p] = yea_votes.query("party == @p")[idx].count()
+            vote_dict["nay_vote"][p] = nay_votes.query("party == @p")[idx].count() 
+                                  
+        return vote_dict
+    
+    def process_counts(self, voters, vote_result):
+        """ Takes representation and party counts and cleans them for text. """
+        text = ""
+        v = "yea"
+        rep = self.get_vote_rep(voters)
+        party = self.get_party_rep(voters)
+        
+        per = "{0:.1%}".format(rep[v.title()])
+        text += f"{per} of the country represented by {v} votes"
+        
+        if (rep[v.title()] >= 0.5) & (vote_result == "REJECTED"): 
+            text += f", but the measure was still rejected. ⚠️"
         else:
-            return (votes["lis_member_id"].min() / votes["lis_member_id"].max())
-
+            text += f". The measure was {vote_result.lower()}."
+        
+        return text
+            
     def process_vote(self, vote):
         """ Process a vote into tweet text form """
         tweet_text = ""
@@ -107,26 +126,16 @@ class SenateData():
         vote_detail = self.get_senate_vote(vote_number)
 
         if isinstance(vote["question"], dict):
-            vote_question = vote["question"]["#text"].lower()
+            vote_question = vote["question"]["#text"]
         else:
-            vote_question = vote["question"].lower()
+            vote_question = vote["question"]
         vote_question += (" " + vote["issue"])
         vote_result = vote["result"].upper()
-        bill = f"Vote {int(vote_number)} {vote_question}: {vote_result}"
+        bill = f"{vote_question} (vote #{int(vote_number)}): "
         tweet_text += bill
-
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
-        rep = self.get_vote_rep(voters)
-        # TODO: come up with system for making the "different" tweets 
-        tweet_text += " 🌾 👀 🌾" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
-        tweet_text += "\n% represented by… "
-
-        for v in ["Yea", "Nay"]:
-            per = "{0:.1%}".format(rep[v])
-            tally = vote_tally[v.lower() + "s"]
-            tweet_text += f"{v.lower()}: {per} ({tally}); "
-        party = self.get_party_rep(voters)
-        tweet_text += "% bipartisan… {0:.1%}".format(party)
+        tweet_text += self.process_counts(voters, vote_result)
+        
         return tweet_text
 
 if __name__ == "__main__":
