@@ -15,6 +15,9 @@ CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY")
 CONGRESS_NUMBER = os.environ.get("CONGRESS_NUMBER")
 SENATE_SESSION = os.environ.get("SENATE_SESSION")
 CENSUS_POPULATION_CODE = "B01003_001E"
+QUESTIONS = [
+    "motion", "bill", "amendment", "resolution", "nomination", "veto", 
+    ]
 
 class SenateData():
 
@@ -143,4 +146,18 @@ if __name__ == "__main__":
     senate_data = senate_obj.get_senate_list()
 
     for item in senate_data["vote_summary"]["votes"]["vote"][:10]:
-        print(senate_obj.process_vote(item))
+        if isinstance(item["question"], dict):
+            vote_question = item["question"]["#text"]
+        else:
+            vote_question = item["question"]
+        
+        vote_question = vote_question.lower()
+        vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
+        for q in QUESTIONS:
+            if q in vote_question:
+                print(senate_obj.process_vote(item))
+                pass
+            else:
+                pass
+        
+        # print(senate_obj.process_vote(item))
