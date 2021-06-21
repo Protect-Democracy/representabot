@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+import boto3
 import dotenv
 import pandas as pd
 import tweepy
@@ -15,8 +16,10 @@ import data as cd
 dotenv.load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-GC_BUCKET_NAME = os.environ.get("GC_BUCKET_NAME")
-GC_FILENAME = os.environ.get("GC_FILENAME")
+AWS_BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
+AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+OBJ_FILENAME = os.environ.get("OBJ_FILENAME")
 
 
 def create_api():
@@ -45,12 +48,29 @@ def create_api():
 def load():
     """ Load previous tweet data file from Google Cloud """
     try:
-        tweets = pd.read_csv(f"gs://{GC_BUCKET_NAME}/{GC_FILENAME}", dtype=str)
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        )
+
+        response = s3.get_object(Bucket=AWS_BUCKET_NAME, Key="tweets.csv")
+
+        status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+
+        if status == 200:
+            tweets = pd.read_csv(response.get("Body"), dtype=str)
+        else:
+            logging.warning(f"Status: {status}")
+            raise Exception("Unable to open resource")
+
+        #tweets = pd.read_csv(f"gs://{GC_BUCKET_NAME}/{OBJ_FILENAME}", dtype=str)
     except Exception as e:
         # TODO: Adapt this so it does not automatically tweet if file isn't
         # found; need a better failover
         # Check for existence of Google Cloud Storage object first
         logging.warning("No datafile found… generating new one")
+        logging.warning(e)
         tweets = pd.DataFrame(
             columns=["tweet_id", "congress", "session", "date", "vote"], dtype=str
         )
@@ -60,19 +80,22 @@ def load():
 def save(df):
     """ Write tweet data back to Google Cloud """
     try:
-        client = storage.Client()
-        bucket = client.get_bucket(GC_BUCKET_NAME)
-
-        bucket.blob(GC_FILENAME).upload_from_string(
-            df.to_csv(index=False), 'text/csv'
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
         )
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer)
+        s3_resource = s3.resource('s3')
+        s3_resource.Object(AWS_BUCKET_NAME, 'test.csv').put(Body=csv_buffer.getvalue())
     except Exception as e:
-        logging.warning(
-            "Google Cloud Storage not configured for writing data… "
-            "falling back to local file system"
+        logging.error(
+            "Cloud Storage not configured for writing data… "
         )
-        logging.warning(e)
-        df.to_csv(GC_FILENAME, index=False)
+        logging.error(e)
+        # NOTE: Use this to fall back to local storage
+        #df.to_csv(OBJ_FILENAME, index=False)
 
 
 def run(request):
@@ -114,6 +137,7 @@ def run(request):
             except Exception as e:
                 # Tweet failed for some reason
                 logging.error("Tweet failed")
+                logging.error(text)
                 raise e
     if not new_tweets.empty:
         logging.info(f"Tweeted {len(new_tweets)} new votes")
