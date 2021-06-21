@@ -104,60 +104,122 @@ class SenateData():
                                   
         return vote_dict
     
-    def process_counts(self, voters, vote_result):
+    def process_detail_text(self, vote_rep, party_rep):
         """ Takes representation and party counts and cleans them for text. """
         text = ""
+        
         v = "yea"
-        rep = self.get_vote_rep(voters)
-        party = self.get_party_rep(voters)
+        p = "{0:.1%}".format(vote_rep[v.title()])
         
-        per = "{0:.1%}".format(rep[v.title()])
-        text += f"{per} of the country represented by {v} votes"
+        total_vote = party_rep[f"{v}_vote"]["total"]
+        d_vote = party_rep[f"{v}_vote"]["D"]
+        r_vote = party_rep[f"{v}_vote"]["R"]
         
-        if (rep[v.title()] >= 0.5) & (vote_result == "REJECTED"): 
-            text += f", but the measure was still rejected. ⚠️"
-        else:
-            text += f". The measure was {vote_result.lower()}."
+        percent = f"{p} of the country represented by {total_vote} {v} vote(s)."
+        party = f"{d_vote} Democrat(s) and {r_vote} Republican(s) voted {v}."
+        
+        text += f"🚻  {percent}"
+        text += "\n\n"
+        text += f"🗳  {party}"
         
         return text
+        
+    def process_link_text(self, vote_number):
+        url = (
+            "https://www.senate.gov/legislative/LIS/roll_call_lists/roll_call_vote_cfm.cfm?"
+            f"congress={CONGRESS_NUMBER}&session={SENATE_SESSION}&vote={vote_number}"
+            )
+        return url
+
+    def process_vote_text(self, question, vote_question, vote, vote_detail):
+        
+        def process_name(name):
+            name = name[:name.find(",")]
+            name = name.split()
+            return name[0][0] + ". " + name[-1]
+        
+        def process_measure():
+            text = ""
+            # TODO: make these separate functions? 
+            if question == "motion":
+                if len(vote_question.split()) > 3:
+                    text += f"{vote_question} was {vote_result}"
+                else:
+                    text += f"{vote_question} for {vote_issue}"
+                    if "PN" in vote_issue:
+                        nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                        text += f" (nomination of {nominee}) "
+                    else:
+                        text += " "
+                    text += f"was {vote_result}"
+            elif question == "bill":
+                text += f"the bill {vote_issue} was {vote_result}"
+            elif question == "amendment":
+                amend = vote["question"]["measure"]
+                text += f"the amendment {amend} for {vote_issue} was {vote_result}"
+            elif question == "resolution":
+                text += f"{vote_question} for {vote_issue} was {vote_result}"
+            elif question == "nomination":
+                nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                text += f"the nomination for {nominee} ({vote_issue}) was {vote_result}"
+            elif question == "veto":
+                text += f"the veto on {vote_issue} was {vote_result[6:]}"
+                
+            return text
+        
+        vote_issue = vote["issue"]
+        vote_result = vote["result"].lower()
+        vote_number = vote["vote_number"]
+        
+        return process_measure()
+        
             
     def process_vote(self, vote):
         """ Process a vote into tweet text form """
         tweet_text = ""
         vote_number = vote["vote_number"]
         vote_tally = vote["vote_tally"]
+        vote_question = vote["question"]
+        vote_result = vote["result"]
         vote_detail = self.get_senate_vote(vote_number)
-
-        if isinstance(vote["question"], dict):
-            vote_question = vote["question"]["#text"]
-        else:
-            vote_question = vote["question"]
-        vote_question += (" " + vote["issue"])
-        vote_result = vote["result"].upper()
-        bill = f"{vote_question} (vote #{int(vote_number)}): "
-        tweet_text += bill
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
-        tweet_text += self.process_counts(voters, vote_result)
+
+        if isinstance(vote_question, dict):
+            vote_question = vote_question["#text"]
+        else:
+            vote_question = vote_question
+            
+        vote_question = vote_question.lower()[3:]
+        vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
         
-        return tweet_text
+        if len(vote["issue"]) < 1:
+            raise Exception
+        else:
+            for q in QUESTIONS:
+                if q in vote_question:
+                    # TODO: how to save data for db? pass row as a list?
+                    tweet_text += f"Vote #{int(vote_number)}: "
+                    tweet_text += self.process_vote_text(q, vote_question, vote, vote_detail)
+                    tweet_text += ".\n\n"
+                    
+                    party_rep = self.get_party_rep(voters)
+                    vote_rep = self.get_vote_rep(voters)
+                    tweet_text += self.process_detail_text(vote_rep, party_rep)
+                    tweet_text += "\n\n"
+                    
+                    link = self.process_link_text(vote_number)
+                    tweet_text += f"Source: {link}"
+                    return tweet_text
+                else: 
+                    pass
+        # TODO: make exception for invalid measures 
+        raise Exception
+        
 
 if __name__ == "__main__":
     senate_obj = SenateData(CONGRESS_NUMBER, SENATE_SESSION)
     senate_data = senate_obj.get_senate_list()
 
     for item in senate_data["vote_summary"]["votes"]["vote"][:10]:
-        if isinstance(item["question"], dict):
-            vote_question = item["question"]["#text"]
-        else:
-            vote_question = item["question"]
-        
-        vote_question = vote_question.lower()
-        vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
-        for q in QUESTIONS:
-            if q in vote_question:
-                print(senate_obj.process_vote(item))
-                pass
-            else:
-                pass
-        
-        # print(senate_obj.process_vote(item))
+        print(senate_obj.process_vote(item))
+        print("\n")
