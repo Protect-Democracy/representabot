@@ -15,6 +15,7 @@ google-cloud-storage = "^1.38.0"
 fsspec = "^2021.5.0"
 gcsfs = "^2021.5.0"
 python-dotenv = "^0.17.1"
+boto3 = "^1.17.98"
 
 [tool.poetry.dev-dependencies]
 
