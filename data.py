@@ -125,6 +125,7 @@ class SenateData():
         return text
         
     def process_link_text(self, vote_number):
+        """ Creates a source link to the senate.gov website. """
         url = (
             "https://www.senate.gov/legislative/LIS/roll_call_lists/roll_call_vote_cfm.cfm?"
             f"congress={CONGRESS_NUMBER}&session={SENATE_SESSION}&vote={vote_number}"
@@ -132,13 +133,16 @@ class SenateData():
         return url
 
     def process_vote_text(self, question, vote_question, vote, vote_detail):
+        """ Processes a vote into the relevant syntax for tweeting. """
         
         def process_name(name):
+            """ Helper function for process_measure. """
             name = name[:name.find(",")]
             name = name.split()
             return name[0][0] + ". " + name[-1]
         
         def process_measure():
+            """ Helper function for process_vote_text. """
             text = ""
             # TODO: make these separate functions? 
             if question == "motion":
@@ -176,6 +180,11 @@ class SenateData():
             
     def process_vote(self, vote):
         """ Process a vote into tweet text form """
+        
+        def process_date(date_str):
+            date = pd.to_datetime(date_str)
+            return date.strftime("%B %d, %Y")
+        
         tweet_text = ""
         vote_number = vote["vote_number"]
         vote_tally = vote["vote_tally"]
@@ -183,6 +192,7 @@ class SenateData():
         vote_result = vote["result"]
         vote_detail = self.get_senate_vote(vote_number)
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
+        date = process_date(vote_detail["roll_call_vote"]["vote_date"])
 
         if isinstance(vote_question, dict):
             vote_question = vote_question["#text"]
@@ -198,7 +208,7 @@ class SenateData():
             for q in QUESTIONS:
                 if q in vote_question:
                     # TODO: how to save data for db? pass row as a list?
-                    tweet_text += f"Vote #{int(vote_number)}: "
+                    tweet_text += f"Vote #{int(vote_number)} on {date}: "
                     tweet_text += self.process_vote_text(q, vote_question, vote, vote_detail)
                     tweet_text += ".\n\n"
                     
