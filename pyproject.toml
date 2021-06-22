@@ -11,10 +11,10 @@ census = "^0.8.17"
 us = "^2.0.2"
 xmltodict = "^0.12.0"
 tweepy = "^3.10.0"
-google-cloud-storage = "^1.38.0"
 fsspec = "^2021.5.0"
 gcsfs = "^2021.5.0"
 python-dotenv = "^0.17.1"
+boto3 = "^1.17.98"
 
 [tool.poetry.dev-dependencies]
 
