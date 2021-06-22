@@ -241,7 +241,6 @@ class SenateData():
                 if(question in vote_question)
             ]
             if q:
-                # TODO: how to save data for db? pass row as a list?
                 tweet_text += f"Vote #{int(vote_number)} on {date}: "
                 tweet_text += self.process_vote_text(q[0], vote_question, vote, vote_detail)
                 tweet_text += ".\n\n"
