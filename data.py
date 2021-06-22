@@ -232,7 +232,10 @@ class SenateData():
         vote_question = vote_question.lower()[3:]
         vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
 
-        # TODO: Explain what this case is
+        # votes without an "issue" don't have a subject
+        # this was an odd edge case that's accounted for here
+        # these votes are not voting on anything, or else they would have an "issue"
+        # of the few cases that fit here, I think they're procedural votes 
         if len(vote["issue"]) < 1:
             raise DoNotTweetException
         else:
