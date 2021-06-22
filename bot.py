@@ -141,7 +141,6 @@ def run(request):
                 # Tweet failed for some reason
                 logging.error("Tweet failed")
                 logging.error(text)
-                raise e
     if not new_tweets.empty:
         logging.info(f"Tweeted {len(new_tweets)} new votes")
         save(tweets.append(new_tweets))
