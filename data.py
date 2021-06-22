@@ -19,6 +19,22 @@ QUESTIONS = [
     "motion", "bill", "amendment", "resolution", "nomination", "veto",
 ]
 
+
+def flatten(current: dict, key: str=None, result: dict={}):
+    """ Recursively flatten a dictionary based on its key values """
+    if isinstance(current, dict):
+        for k in current:
+            new_key = f"{key}_{k}" if key else k
+            flatten(current[k], new_key, result)
+    else:
+        result[key] = current
+    return result
+
+
+class DoNotTweetException(Exception):
+    pass
+
+
 class SenateData():
 
     def __init__(self, congress_num, session_num):
@@ -216,28 +232,32 @@ class SenateData():
         vote_question = vote_question.lower()[3:]
         vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
 
+        # TODO: Explain what this case is
         if len(vote["issue"]) < 1:
-        # TODO: make exception for invalid measures
-            raise Exception
+            raise DoNotTweetException
         else:
-            for q in QUESTIONS:
-                if q in vote_question:
-                    # TODO: how to save data for db? pass row as a list?
-                    tweet_text += f"Vote #{int(vote_number)} on {date}: "
-                    tweet_text += self.process_vote_text(q, vote_question, vote, vote_detail)
-                    tweet_text += ".\n\n"
+            q = [
+                question for question in QUESTIONS
+                if(question in vote_question)
+            ]
+            if q:
+                # TODO: how to save data for db? pass row as a list?
+                tweet_text += f"Vote #{int(vote_number)} on {date}: "
+                tweet_text += self.process_vote_text(q[0], vote_question, vote, vote_detail)
+                tweet_text += ".\n\n"
 
-                    party_rep = self.get_party_rep(voters)
-                    vote_rep = self.get_vote_rep(voters)
-                    tweet_text += self.process_detail_text(vote_rep, party_rep)
+                party_rep = self.get_party_rep(voters)
+                vote_rep = self.get_vote_rep(voters)
+                tweet_text += self.process_detail_text(vote_rep, party_rep)
 
-                    link = self.process_link_text(vote_number)
-                    tweet_text += f"src: {link}"
-                    return tweet_text
-                else:
-                    pass
-        # TODO: make exception for invalid measures 
-        raise Exception
+                link = self.process_link_text(vote_number)
+                tweet_text += f"src: {link}"
+                party_rep = flatten(party_rep, result={})
+                vote_rep = flatten(vote_rep, result={})
+                return tweet_text, party_rep, vote_rep
+            else:
+                # Vote does not match any of the desired questions
+                raise DoNotTweetException
 
 
 if __name__ == "__main__":
@@ -246,11 +266,16 @@ if __name__ == "__main__":
     chars = []
 
     for item in senate_data["vote_summary"]["votes"]["vote"]:
-        tweet = senate_obj.process_vote(item)
+        try:
+            tweet, party_data, vote_data = senate_obj.process_vote(item)
+        except DoNotTweetException:
+            pass
         if len(tweet) > 360:
             chars.append(len(tweet))
             print(tweet)
             print("\n")
+        else:
+            pass
 
     print(chars)
 
