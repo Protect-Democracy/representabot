@@ -51,7 +51,7 @@ class SenateData():
         # self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))[0][CENSUS_POPULATION_CODE]
         self.state_pop_data = state_pop_data
         self.us_pop_data = self.state_pop_data.loc[
-            lambda x: x["state"] != "DC", CENSUS_POPULATION_CODE
+            lambda x: ~x["state"].isin(["DC", "PR"]), CENSUS_POPULATION_CODE
         ].sum()
 
         self.congress_num = congress_num
