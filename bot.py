@@ -20,6 +20,25 @@ AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 OBJ_FILENAME = os.environ.get("OBJ_FILENAME")
 
+DTYPES = {
+    "tweet_id": str,
+    "congress": str,
+    "session": str,
+    "date": str,
+    "vote": str,
+    "yea_vote_total": "Int64",
+    "yea_vote_D": "Int64",
+    "yea_vote_R": "Int64",
+    "nay_vote_total": "Int64",
+    "nay_vote_D": "Int64",
+    "nay_vote_R": "Int64",
+    "abstain_vote_total": "Int64",
+    "abstain_vote_D": "Int64",
+    "abstain_vote_R": "Int64",
+    "Nay": float,
+    "Yea": float,
+    "Abstain": float
+}
 
 def create_api():
     """ Creates Tweepy API object for use later """
@@ -58,7 +77,10 @@ def load():
         status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
 
         if status == 200:
-            tweets = pd.read_csv(response.get("Body"), dtype=str)
+            tweets = pd.read_csv(
+                response.get("Body"),
+                dtype=DTYPES
+            )
         else:
             logging.warning(f"Status: {status}")
             raise Exception("Unable to open resource")
@@ -143,6 +165,10 @@ def run(request):
                 # Tweet failed for some reason
                 logging.error("Tweet failed")
                 logging.error(text)
+
+        # Only process a maximum of four (4) tweets in a single run
+        if len(new_tweets) == 4:
+            break
     if not new_tweets.empty:
         logging.info(f"Tweeted {len(new_tweets)} new votes")
         save(tweets.append(new_tweets))
