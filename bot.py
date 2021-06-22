@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -6,8 +7,6 @@ import boto3
 import dotenv
 import pandas as pd
 import tweepy
-
-from google.cloud import storage
 
 import data as cd
 
@@ -63,17 +62,9 @@ def load():
         else:
             logging.warning(f"Status: {status}")
             raise Exception("Unable to open resource")
-
-        #tweets = pd.read_csv(f"gs://{GC_BUCKET_NAME}/{OBJ_FILENAME}", dtype=str)
     except Exception as e:
-        # TODO: Adapt this so it does not automatically tweet if file isn't
-        # found; need a better failover
-        # Check for existence of Google Cloud Storage object first
-        logging.warning("No datafile found… generating new one")
-        logging.warning(e)
-        tweets = pd.DataFrame(
-            columns=["tweet_id", "congress", "session", "date", "vote"], dtype=str
-        )
+        logging.error("No datafile found…")
+        raise e
     return tweets
 
 
@@ -85,10 +76,22 @@ def save(df):
             aws_access_key_id=AWS_ACCESS_KEY,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY
         )
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer)
-        s3_resource = s3.resource('s3')
-        s3_resource.Object(AWS_BUCKET_NAME, 'test.csv').put(Body=csv_buffer.getvalue())
+        with io.StringIO() as csv_buffer:
+            df.sort_values(by=["congress", "session", "vote"], inplace=True)
+            df.to_csv(csv_buffer, index=False)
+            response = s3.put_object(
+                Bucket=AWS_BUCKET_NAME,
+                Key=OBJ_FILENAME,
+                Body=csv_buffer.getvalue()
+            )
+
+            status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+
+            if status != 200:
+                raise Exception(
+                    f"Unable to save file {AWS_BUCKET_NAME}/{OBJ_FILENAME}"
+                )
+            return status
     except Exception as e:
         logging.error(
             "Cloud Storage not configured for writing data… "
