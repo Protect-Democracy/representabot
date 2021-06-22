@@ -15,6 +15,25 @@ CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY")
 CONGRESS_NUMBER = os.environ.get("CONGRESS_NUMBER")
 SENATE_SESSION = os.environ.get("SENATE_SESSION")
 CENSUS_POPULATION_CODE = "B01003_001E"
+QUESTIONS = [
+    "motion", "bill", "amendment", "resolution", "nomination", "veto",
+]
+
+
+def flatten(current: dict, key: str=None, result: dict={}):
+    """ Recursively flatten a dictionary based on its key values """
+    if isinstance(current, dict):
+        for k in current:
+            new_key = f"{key}_{k}" if key else k
+            flatten(current[k], new_key, result)
+    else:
+        result[key] = current
+    return result
+
+
+class DoNotTweetException(Exception):
+    pass
+
 
 class SenateData():
 
@@ -28,9 +47,12 @@ class SenateData():
         state_pop_data.loc[:, "state"] = (
             state_pop_data["NAME"].map(lambda x: states.lookup(x).abbr)
         )
-
-        self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))
+        # if we want to change back to including DC later for reasons
+        # self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))[0][CENSUS_POPULATION_CODE]
         self.state_pop_data = state_pop_data
+        self.us_pop_data = self.state_pop_data.loc[
+            lambda x: x["state"] != "DC", CENSUS_POPULATION_CODE
+        ].sum()
 
         self.congress_num = congress_num
         self.session_num = session_num
@@ -70,60 +92,196 @@ class SenateData():
         votes = voters.groupby("vote_cast")[[CENSUS_POPULATION_CODE]].sum()
         votes.loc[:, "rep"] = (
             votes[CENSUS_POPULATION_CODE]
-            / (int(self.us_pop_data[0][CENSUS_POPULATION_CODE]) * 2)
+            / (int(self.us_pop_data) * 2)
         )
         votes = votes[["rep"]].to_dict()["rep"]
-        for v in ["Yea", "Nay"]:
+        for v in ["Yea", "Nay", "Abstain"]:
             if v not in votes:
                 votes[v] = 0.0
         return votes
 
     def get_party_rep(self, voters):
-        """ Gets the ratio of Yea votes made by the non-majority party
-            to the majority party. This is where the bipartisanship score comes from. 
-        """
-        votes = voters.loc[
-            lambda x: (x["party"].isin(["D", "R"])) & (x["vote_cast"] == "Yea")
-        ]
-        votes = votes.groupby("party")[["lis_member_id"]].count()
-        if len(votes) < 2:
-            return 0.0
-        else:
-            return (votes["lis_member_id"].min() / votes["lis_member_id"].max())
+        """ Returns the vote count on a measure and the major party breakdown of those votes. """
+        idx = "lis_member_id"
+        yea_votes = voters.loc[lambda x: x["vote_cast"] == "Yea"]
+        nay_votes = voters.loc[lambda x: x["vote_cast"] == "Nay"]
+        abstain_votes = voters.loc[lambda x: ~x["vote_cast"].isin(["Yea", "Nay"])]
+
+        vote_dict = {}
+
+        vote_dict["yea_vote"] = {}
+        vote_dict["yea_vote"]["total"] = yea_votes[idx].count()
+
+        vote_dict["nay_vote"] = {}
+        vote_dict["nay_vote"]["total"] = nay_votes[idx].count()
+
+        vote_dict["abstain_vote"] = {}
+        vote_dict["abstain_vote"]["total"] = abstain_votes[idx].count()
+
+        for p in ["D", "R"]:
+            vote_dict["yea_vote"][p] = yea_votes.query("party == @p")[idx].count()
+            vote_dict["nay_vote"][p] = nay_votes.query("party == @p")[idx].count()
+            vote_dict["abstain_vote"][p] = abstain_votes.query("party == @p")[idx].count()
+
+        return vote_dict
+
+    def process_detail_text(self, vote_rep, party_rep):
+        """ Takes representation and party counts and cleans them for text. """
+        text = ""
+
+        for v in ["yea", "nay", "abstain"]:
+            p = "{0:.1%}".format(vote_rep[v.title()])
+            total_vote = party_rep[f"{v}_vote"]["total"]
+            d_vote = party_rep[f"{v}_vote"]["D"]
+            r_vote = party_rep[f"{v}_vote"]["R"]
+
+            if total_vote == 1:
+                votes = "vote"
+            else:
+                votes = "votes"
+
+            if v == "abstain":
+                li = f"No vote: {p} ... {total_vote} {votes} ({d_vote} D - {r_vote} R)"
+            elif v == "nay":
+                li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote} D - {r_vote} R)"
+            else:
+                li = f"{v.title()}s: {p} of the country represented by {total_vote} votes ({d_vote} D - {r_vote} R)"
+
+            text += f"→ {li}"
+            text += "\n\n"
+            # text += f"🗳  {party}"
+
+        return text
+
+    def process_link_text(self, vote_number):
+        """ Creates a source link to the senate.gov website. """
+        url = (
+            "https://www.senate.gov/legislative/LIS/roll_call_lists/roll_call_vote_cfm.cfm?"
+            f"congress={CONGRESS_NUMBER}&session={SENATE_SESSION}&vote={vote_number}"
+            )
+        return url
+
+    def process_vote_text(self, question, vote_question, vote, vote_detail):
+        """ Processes a vote into the relevant syntax for tweeting. """
+
+        def process_name(name):
+            """ Helper function for process_measure. """
+            name = name[:name.find(",")]
+            name = name.split()
+            return name[0][0] + ". " + name[-1]
+
+        def process_measure():
+            """ Helper function for process_vote_text. """
+            text = ""
+            # TODO: make these separate functions? 
+            if question == "motion":
+                if len(vote_question.split()) > 3:
+                    text += f"{vote_question} was {vote_result}"
+                else:
+                    text += f"{vote_question}"
+                    if "PN" in vote_issue:
+                        nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                        text += f" on nominating {nominee} "
+                    else:
+                        text += f" for {vote_issue} "
+                    text += f"was {vote_result}"
+            elif question == "bill":
+                text += f"the bill {vote_issue} was {vote_result}"
+            elif question == "amendment":
+                amend = vote["question"]["measure"]
+                text += f"the amendment {amend} for {vote_issue} was {vote_result}"
+            elif question == "resolution":
+                text += f"{vote_question} for {vote_issue} was {vote_result}"
+            elif question == "nomination":
+                nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                text += f"the nomination for {nominee} ({vote_issue}) was {vote_result}"
+            elif question == "veto":
+                text += f"the veto on {vote_issue} was {vote_result[6:]}"
+
+            return text
+
+        vote_issue = vote["issue"]
+        vote_result = vote["result"].lower()
+        vote_number = vote["vote_number"]
+
+        return process_measure()
+
 
     def process_vote(self, vote):
         """ Process a vote into tweet text form """
+
+        def process_date(date_str):
+            date = pd.to_datetime(date_str)
+            return date.strftime("%B %d, %Y")
+
         tweet_text = ""
         vote_number = vote["vote_number"]
         vote_tally = vote["vote_tally"]
+        vote_question = vote["question"]
+        vote_result = vote["result"]
         vote_detail = self.get_senate_vote(vote_number)
-
-        if isinstance(vote["question"], dict):
-            vote_question = vote["question"]["#text"].lower()
-        else:
-            vote_question = vote["question"].lower()
-        vote_question += (" " + vote["issue"])
-        vote_result = vote["result"].upper()
-        bill = f"Vote {int(vote_number)} {vote_question}: {vote_result}"
-        tweet_text += bill
-
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
-        rep = self.get_vote_rep(voters)
-        # TODO: come up with system for making the "different" tweets 
-        tweet_text += " 🌾 👀 🌾" if (rep["Yea"] >= 0.5) and (vote_result == "REJECTED") else ""
-        tweet_text += "\n% represented by… "
+        voters.loc[lambda x: ~x["vote_cast"].isin(["Yea", "Nay"]), "vote_cast"] = "Abstain"
+        date = process_date(vote_detail["roll_call_vote"]["vote_date"])
 
-        for v in ["Yea", "Nay"]:
-            per = "{0:.1%}".format(rep[v])
-            tally = vote_tally[v.lower() + "s"]
-            tweet_text += f"{v.lower()}: {per} ({tally}); "
-        party = self.get_party_rep(voters)
-        tweet_text += "% bipartisan… {0:.1%}".format(party)
-        return tweet_text
+        if isinstance(vote_question, dict):
+            vote_question = vote_question["#text"]
+        else:
+            vote_question = vote_question
+
+        vote_question = vote_question.lower()[3:]
+        vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
+
+        # votes without an "issue" don't have a subject
+        # this was an odd edge case that's accounted for here
+        # these votes are not voting on anything, or else they would have an "issue"
+        # of the few cases that fit here, I think they're procedural votes 
+        if len(vote["issue"]) < 1:
+            raise DoNotTweetException
+        else:
+            q = [
+                question for question in QUESTIONS
+                if(question in vote_question)
+            ]
+            if q:
+                tweet_text += f"Vote #{int(vote_number)} on {date}: "
+                tweet_text += self.process_vote_text(q[0], vote_question, vote, vote_detail)
+                tweet_text += ".\n\n"
+
+                party_rep = self.get_party_rep(voters)
+                vote_rep = self.get_vote_rep(voters)
+                tweet_text += self.process_detail_text(vote_rep, party_rep)
+
+                link = self.process_link_text(vote_number)
+                tweet_text += f"src: {link}"
+                party_rep = flatten(party_rep, result={})
+                vote_rep = flatten(vote_rep, result={})
+                return tweet_text, party_rep, vote_rep
+            else:
+                # Vote does not match any of the desired questions
+                raise DoNotTweetException
+
 
 if __name__ == "__main__":
     senate_obj = SenateData(CONGRESS_NUMBER, SENATE_SESSION)
     senate_data = senate_obj.get_senate_list()
+    chars = []
 
-    for item in senate_data["vote_summary"]["votes"]["vote"][:10]:
-        print(senate_obj.process_vote(item))
+    for item in senate_data["vote_summary"]["votes"]["vote"]:
+        try:
+            tweet, party_data, vote_data = senate_obj.process_vote(item)
+        except DoNotTweetException:
+            pass
+        if len(tweet) > 360:
+            chars.append(len(tweet))
+            print(tweet)
+            print("\n")
+        else:
+            pass
+
+    print(chars)
+
+    charlen = pd.Series(chars)
+    result = f"mean: {charlen.mean()}, max: {charlen.max()}, min: {charlen.min()}"
+    print(result)
+
