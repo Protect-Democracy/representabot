@@ -126,7 +126,7 @@ class SenateData():
         return vote_dict
 
     def process_detail_text(self, vote_rep, party_rep):
-        """ Takes representation and party counts and cleans them for text. """
+        """ Takes representation and party counts and cleans them for text. """      
         text = ""
 
         for v in ["yea", "nay", "abstain"]:
@@ -134,6 +134,7 @@ class SenateData():
             total_vote = party_rep[f"{v}_vote"]["total"]
             d_vote = party_rep[f"{v}_vote"]["D"]
             r_vote = party_rep[f"{v}_vote"]["R"]
+            i_vote = total_vote - (d_vote + r_vote)
 
             if total_vote == 1:
                 votes = "vote"
@@ -141,15 +142,16 @@ class SenateData():
                 votes = "votes"
 
             if v == "abstain":
-                li = f"No vote: {p} ... {total_vote} {votes} ({d_vote} D - {r_vote} R)"
+                li = f"No vote: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             elif v == "nay":
-                li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote} D - {r_vote} R)"
+                li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             else:
-                li = f"{v.title()}s: {p} of the country represented by {total_vote} votes ({d_vote} D - {r_vote} R)"
+                li = f"{v.title()}s: {p} of the country represented by {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
+                
+            
 
             text += f"→ {li}"
             text += "\n\n"
-            # text += f"🗳  {party}"
 
         return text
 
@@ -174,11 +176,11 @@ class SenateData():
             """ Helper function for process_vote_text. """
             text = ""
             # TODO: make these separate functions? 
-            if question == "motion":
+            if question == "motion":       
                 if len(vote_question.split()) > 3:
-                    text += f"{vote_question} was {vote_result}"
+                    text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
                 else:
-                    text += f"{vote_question}"
+                    text += f"{vote_question.capitalize()}"
                     if "PN" in vote_issue:
                         nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
                         text += f" on nominating {nominee} "
@@ -186,17 +188,17 @@ class SenateData():
                         text += f" for {vote_issue} "
                     text += f"was {vote_result}"
             elif question == "bill":
-                text += f"the bill {vote_issue} was {vote_result}"
+                text += f"The bill {vote_issue} was {vote_result}"
             elif question == "amendment":
                 amend = vote["question"]["measure"]
-                text += f"the amendment {amend} for {vote_issue} was {vote_result}"
+                text += f"The amendment {amend} for {vote_issue} was {vote_result}"
             elif question == "resolution":
-                text += f"{vote_question} for {vote_issue} was {vote_result}"
+                text += f"{vote_question.capitalize()} for {vote_issue} was {vote_result}"
             elif question == "nomination":
                 nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
-                text += f"the nomination for {nominee} ({vote_issue}) was {vote_result}"
+                text += f"The nomination for {nominee} ({vote_issue}) was {vote_result}"
             elif question == "veto":
-                text += f"the veto on {vote_issue} was {vote_result[6:]}"
+                text += f"The veto on {vote_issue} was {vote_result[6:]}"
 
             return text
 
@@ -230,7 +232,8 @@ class SenateData():
             vote_question = vote_question
 
         vote_question = vote_question.lower()[3:]
-        vote_question = vote_question[:vote_question.find('(')] if vote_question.find('(') > 0 else vote_question
+        vote_question = vote_question[:vote_question.find('(')-1] if vote_question.find('(') > 0 else vote_question
+        vote_question = "the " + vote_question if vote_question[:3] != "the" else vote_question
 
         # votes without an "issue" don't have a subject
         # this was an odd edge case that's accounted for here
@@ -238,13 +241,16 @@ class SenateData():
         # of the few cases that fit here, I think they're procedural votes 
         if len(vote["issue"]) < 1:
             raise DoNotTweetException
+        elif vote["issue"] == "n/a":
+            raise DoNotTweetException
         else:
             q = [
                 question for question in QUESTIONS
                 if(question in vote_question)
             ]
             if q:
-                tweet_text += f"Vote #{int(vote_number)} on {date}: "
+                # might change in future
+                # tweet_text += f"Vote #{int(vote_number)} on {date}: "
                 tweet_text += self.process_vote_text(q[0], vote_question, vote, vote_detail)
                 tweet_text += ".\n\n"
 
@@ -266,20 +272,24 @@ if __name__ == "__main__":
     senate_obj = SenateData(CONGRESS_NUMBER, SENATE_SESSION)
     senate_data = senate_obj.get_senate_list()
     chars = []
+    exs = []
 
     for item in senate_data["vote_summary"]["votes"]["vote"]:
         try:
             tweet, party_data, vote_data = senate_obj.process_vote(item)
+            if isinstance(item["question"], dict):
+                q = item["question"]["#text"]
+            else:
+                q = item["question"]
+            if q not in exs:
+                chars.append(len(tweet))
+                print(tweet)
+                print("\n")
+                print(q)
+                print("\n")
+                exs = exs + [q]
         except DoNotTweetException:
             pass
-        if len(tweet) > 360:
-            chars.append(len(tweet))
-            print(tweet)
-            print("\n")
-        else:
-            pass
-
-    print(chars)
 
     charlen = pd.Series(chars)
     result = f"mean: {charlen.mean()}, max: {charlen.max()}, min: {charlen.min()}"
