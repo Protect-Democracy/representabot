@@ -20,9 +20,9 @@ body {
 
 h1, h2, h3, h4, h5 {
     font-family: 'Roboto Mono', monospace;
-    font-size: 50px;
+    font-size: 40px;
     font-weight: bold;
-    text-align: center;
+    text-align: left;
 }
 
 p {
@@ -38,22 +38,27 @@ a {
 
 .container {
     width: 100%;
-    max-width: 700px;
+    max-width: 470px;
     margin-right: auto;
     margin-left: auto; }
 
 #about-me {
     margin-right: auto;
     margin-left: auto;
-    max-width: 500px;
+    padding-right: 0px;
+    max-width: 470px;
+}
+
+header {
+    width: 90%;
+    margin-right: auto;
+    margin-left: auto;
 }
 
 .menu-container {
     font-family: 'Roboto Mono', monospace;
-    width: 100%;
-    max-width: 1000px;
-    margin-right: auto;
-    margin-left: auto; }
+}
+
 
 .menu ul {
     margin-top: 20px;
@@ -61,7 +66,8 @@ a {
     padding-bottom: 10px;
     border-bottom: var(--border-default);
     list-style-type: none;
-    text-align: right; }
+    text-align: right; 
+}
 
 .menu ul li {
     display: inline;
@@ -73,4 +79,25 @@ a {
     color: var(--text-body-color);;
     text-decoration: none;
     font-size: 13px;
+}
+
+footer {
+    width: 90%;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: right;
+}
+
+.footer {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    position: absolute;
+    bottom: 20px;
+}
+
+.footer a {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--text-body-color);
+    text-decoration: underline solid var(--text-body-color);
 }
