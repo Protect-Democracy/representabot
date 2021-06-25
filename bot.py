@@ -66,25 +66,23 @@ def create_api():
 
 def load():
     """Load previous tweet data file from Google Cloud"""
-    try:
-        s3 = boto3.client(
-            "s3",
-            aws_access_key_id=AWS_ACCESS_KEY,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        )
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
 
-        response = s3.get_object(Bucket=AWS_BUCKET_NAME, Key="tweets.csv")
+    response = s3.get_object(Bucket=AWS_BUCKET_NAME, Key="tweets.csv")
 
-        status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+    status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
 
-        if status == 200:
-            tweets = pd.read_csv(response.get("Body"), dtype=DTYPES)
-        else:
-            logging.warning(f"Status: {status}")
-            raise Exception("Unable to open resource")
-    except Exception as e:
-        logging.error("No datafile found…")
-        raise e
+    if status == 200:
+        tweets = pd.read_csv(response.get("Body"), dtype=DTYPES)
+    else:
+        # TODO: Improve exception handling by breaking out various
+        # potential errors.
+        logging.warning(f"Status: {status}")
+        raise Exception("Unable to open resource")
     return tweets
 
 
@@ -164,6 +162,7 @@ def run(request):
                 # Tweet failed for some reason
                 logging.error("Tweet failed")
                 logging.error(text)
+                logging.error(e)
 
         # Only process a maximum of four (4) tweets in a single run
         if len(new_tweets) == 4:
