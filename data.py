@@ -16,12 +16,17 @@ CONGRESS_NUMBER = os.environ.get("CONGRESS_NUMBER")
 SENATE_SESSION = os.environ.get("SENATE_SESSION")
 CENSUS_POPULATION_CODE = "B01003_001E"
 QUESTIONS = [
-    "motion", "bill", "amendment", "resolution", "nomination", "veto",
+    "motion",
+    "bill",
+    "amendment",
+    "resolution",
+    "nomination",
+    "veto",
 ]
 
 
-def flatten(current: dict, key: str=None, result: dict={}):
-    """ Recursively flatten a dictionary based on its key values """
+def flatten(current: dict, key: str = None, result: dict = {}):
+    """Recursively flatten a dictionary based on its key values"""
     if isinstance(current, dict):
         for k in current:
             new_key = f"{key}_{k}" if key else k
@@ -35,17 +40,16 @@ class DoNotTweetException(Exception):
     pass
 
 
-class SenateData():
-
+class SenateData:
     def __init__(self, congress_num, session_num):
         c = Census(CENSUS_API_KEY)
         state_pop_data = c.acs5.state(
             ("NAME", CENSUS_POPULATION_CODE), Census.ALL
         )
         state_pop_data = pd.DataFrame.from_dict(state_pop_data)
-        # will need the state abbreviation for the senate.gov data 
-        state_pop_data.loc[:, "state"] = (
-            state_pop_data["NAME"].map(lambda x: states.lookup(x).abbr)
+        # will need the state abbreviation for the senate.gov data
+        state_pop_data.loc[:, "state"] = state_pop_data["NAME"].map(
+            lambda x: states.lookup(x).abbr
         )
         # if we want to change back to including DC later for reasons
         # self.us_pop_data = c.acs5.us(("NAME", CENSUS_POPULATION_CODE))[0][CENSUS_POPULATION_CODE]
@@ -58,7 +62,7 @@ class SenateData():
         self.session_num = session_num
 
     def get_senate_list(self):
-        """ Gets a list of all Senate roll call votes from senate.gov """
+        """Gets a list of all Senate roll call votes from senate.gov"""
         url = (
             "https://www.senate.gov/legislative/LIS/roll_call_lists/"
             f"vote_menu_{self.congress_num}_{self.session_num}.xml"
@@ -66,9 +70,8 @@ class SenateData():
         resp_data = requests.get(url)
         return xmltodict.parse(resp_data.content)
 
-
     def get_senate_vote(self, vote_num):
-        """ Gets detailed data on a particular Senate vote """
+        """Gets detailed data on a particular Senate vote"""
         url = (
             "https://www.senate.gov/legislative/LIS/roll_call_votes/"
             f"vote{self.congress_num}{self.session_num}/"
@@ -77,22 +80,20 @@ class SenateData():
         resp_data = requests.get(url)
         return xmltodict.parse(resp_data.content)
 
-
     def get_voters(self, vote_members):
-        """ Takes a list of members from vote_detail JSON. """
+        """Takes a list of members from vote_detail JSON."""
         voters = pd.json_normalize(vote_members, "member")
         voters = voters.join(
             self.state_pop_data.set_index("state")[[CENSUS_POPULATION_CODE]],
-            on="state"
+            on="state",
         )
         return voters
 
     def get_vote_rep(self, voters):
-        """ Gets the % of the population represented in the vote. """
+        """Gets the % of the population represented in the vote."""
         votes = voters.groupby("vote_cast")[[CENSUS_POPULATION_CODE]].sum()
-        votes.loc[:, "rep"] = (
-            votes[CENSUS_POPULATION_CODE]
-            / (int(self.us_pop_data) * 2)
+        votes.loc[:, "rep"] = votes[CENSUS_POPULATION_CODE] / (
+            int(self.us_pop_data) * 2
         )
         votes = votes[["rep"]].to_dict()["rep"]
         for v in ["Yea", "Nay", "Abstain"]:
@@ -101,11 +102,13 @@ class SenateData():
         return votes
 
     def get_party_rep(self, voters):
-        """ Returns the vote count on a measure and the major party breakdown of those votes. """
+        """Returns the vote count on a measure and the major party breakdown of those votes."""
         idx = "lis_member_id"
         yea_votes = voters.loc[lambda x: x["vote_cast"] == "Yea"]
         nay_votes = voters.loc[lambda x: x["vote_cast"] == "Nay"]
-        abstain_votes = voters.loc[lambda x: ~x["vote_cast"].isin(["Yea", "Nay"])]
+        abstain_votes = voters.loc[
+            lambda x: ~x["vote_cast"].isin(["Yea", "Nay"])
+        ]
 
         vote_dict = {}
 
@@ -119,14 +122,20 @@ class SenateData():
         vote_dict["abstain_vote"]["total"] = abstain_votes[idx].count()
 
         for p in ["D", "R"]:
-            vote_dict["yea_vote"][p] = yea_votes.query("party == @p")[idx].count()
-            vote_dict["nay_vote"][p] = nay_votes.query("party == @p")[idx].count()
-            vote_dict["abstain_vote"][p] = abstain_votes.query("party == @p")[idx].count()
+            vote_dict["yea_vote"][p] = yea_votes.query("party == @p")[
+                idx
+            ].count()
+            vote_dict["nay_vote"][p] = nay_votes.query("party == @p")[
+                idx
+            ].count()
+            vote_dict["abstain_vote"][p] = abstain_votes.query("party == @p")[
+                idx
+            ].count()
 
         return vote_dict
 
     def process_detail_text(self, vote_rep, party_rep):
-        """ Takes representation and party counts and cleans them for text. """      
+        """Takes representation and party counts and cleans them for text."""
         text = ""
 
         for v in ["yea", "nay", "abstain"]:
@@ -147,8 +156,6 @@ class SenateData():
                 li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             else:
                 li = f"{v.title()}s: {p} of the country represented by {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
-                
-            
 
             text += f"→ {li}"
             text += "\n\n"
@@ -156,33 +163,35 @@ class SenateData():
         return text
 
     def process_link_text(self, vote_number):
-        """ Creates a source link to the senate.gov website. """
+        """Creates a source link to the senate.gov website."""
         url = (
             "https://www.senate.gov/legislative/LIS/roll_call_lists/roll_call_vote_cfm.cfm?"
             f"congress={CONGRESS_NUMBER}&session={SENATE_SESSION}&vote={vote_number}"
-            )
+        )
         return url
 
     def process_vote_text(self, question, vote_question, vote, vote_detail):
-        """ Processes a vote into the relevant syntax for tweeting. """
+        """Processes a vote into the relevant syntax for tweeting."""
 
         def process_name(name):
-            """ Helper function for process_measure. """
-            name = name[:name.find(",")]
+            """Helper function for process_measure."""
+            name = name[: name.find(",")]
             name = name.split()
             return name[0][0] + ". " + name[-1]
 
         def process_measure():
-            """ Helper function for process_vote_text. """
+            """Helper function for process_vote_text."""
             text = ""
-            # TODO: make these separate functions? 
-            if question == "motion":       
+            # TODO: make these separate functions?
+            if question == "motion":
                 if len(vote_question.split()) > 3:
                     text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
                 else:
                     text += f"{vote_question.capitalize()}"
                     if "PN" in vote_issue:
-                        nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                        nominee = process_name(
+                            vote_detail["roll_call_vote"]["vote_document_text"]
+                        )
                         text += f" on nominating {nominee} "
                     else:
                         text += f" for {vote_issue} "
@@ -191,14 +200,18 @@ class SenateData():
                 text += f"The bill {vote_issue} was {vote_result}"
             elif question == "amendment":
                 amend = vote["question"]["measure"]
-                text += f"The amendment {amend} for {vote_issue} was {vote_result}"
+                text += (
+                    f"The amendment {amend} for {vote_issue} was {vote_result}"
+                )
             elif question == "resolution":
                 text += f"{vote_question.capitalize()} for {vote_issue} was {vote_result}"
             elif question == "nomination":
-                nominee = process_name(vote_detail["roll_call_vote"]["vote_document_text"])
+                nominee = process_name(
+                    vote_detail["roll_call_vote"]["vote_document_text"]
+                )
                 text += f"The nomination for {nominee} ({vote_issue}) was {vote_result}"
             elif question == "veto":
-                text += f"The veto on {vote_issue} was {vote_result[6:]}"
+                text += f"The veto on {vote_issue} was {vote_result[5:]}"
 
             return text
 
@@ -208,9 +221,8 @@ class SenateData():
 
         return process_measure()
 
-
     def process_vote(self, vote):
-        """ Process a vote into tweet text form """
+        """Process a vote into tweet text form"""
 
         def process_date(date_str):
             date = pd.to_datetime(date_str)
@@ -223,7 +235,9 @@ class SenateData():
         vote_result = vote["result"]
         vote_detail = self.get_senate_vote(vote_number)
         voters = self.get_voters(vote_detail["roll_call_vote"]["members"])
-        voters.loc[lambda x: ~x["vote_cast"].isin(["Yea", "Nay"]), "vote_cast"] = "Abstain"
+        voters.loc[
+            lambda x: ~x["vote_cast"].isin(["Yea", "Nay"]), "vote_cast"
+        ] = "Abstain"
         date = process_date(vote_detail["roll_call_vote"]["vote_date"])
 
         if isinstance(vote_question, dict):
@@ -232,26 +246,33 @@ class SenateData():
             vote_question = vote_question
 
         vote_question = vote_question.lower()[3:]
-        vote_question = vote_question[:vote_question.find('(')-1] if vote_question.find('(') > 0 else vote_question
+        vote_question = (
+            vote_question[: vote_question.find("(")-1]
+            if vote_question.find("(") > 0
+            else vote_question
+        )
         vote_question = "the " + vote_question if vote_question[:3] != "the" else vote_question
 
         # votes without an "issue" don't have a subject
         # this was an odd edge case that's accounted for here
         # these votes are not voting on anything, or else they would have an "issue"
-        # of the few cases that fit here, I think they're procedural votes 
+        # of the few cases that fit here, I think they're procedural votes
         if len(vote["issue"]) < 1:
             raise DoNotTweetException
         elif vote["issue"] == "n/a":
             raise DoNotTweetException
         else:
             q = [
-                question for question in QUESTIONS
-                if(question in vote_question)
+                question
+                for question in QUESTIONS
+                if (question in vote_question)
             ]
             if q:
                 # might change in future
                 # tweet_text += f"Vote #{int(vote_number)} on {date}: "
-                tweet_text += self.process_vote_text(q[0], vote_question, vote, vote_detail)
+                tweet_text += self.process_vote_text(
+                    q[0], vote_question, vote, vote_detail
+                )
                 tweet_text += ".\n\n"
 
                 party_rep = self.get_party_rep(voters)
@@ -292,6 +313,7 @@ if __name__ == "__main__":
             pass
 
     charlen = pd.Series(chars)
-    result = f"mean: {charlen.mean()}, max: {charlen.max()}, min: {charlen.min()}"
+    result = (
+        f"mean: {charlen.mean()}, max: {charlen.max()}, min: {charlen.min()}"
+    )
     print(result)
-
