@@ -1,6 +1,6 @@
 # representabot
 
-<!--- TODO: add links! --> 
+<!--- TODO: add links! -->
 
 ## About me
 
@@ -8,7 +8,7 @@ Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the 
 
 ## Methodology
 
-### Data sources 
+### Data sources
 
 All vote data and vote totals come from the [U.S. Senate](https://senate.gov) website. Data for state population comes from the [Census API](https://api.census.gov).
 
@@ -16,11 +16,20 @@ All vote data and vote totals come from the [U.S. Senate](https://senate.gov) we
 
 To calculate representation, a state's population is added each time a Senator from that state votes a specific way ("yea" or "nay"). The sum of these two numbers is divided by twice our calculated total of the U.S. population. (I do not include D.C. or Puerto Rico in this calculation, which means our statistic overestimates the percent of total people represented.)
 
-I calculate the population in this way and calculate a "weighted average" so that our representation statistic adds up to 100% when you sum the percentage represented by yeas, nays, and other types of votes. 
+I calculate the population in this way and calculate a "weighted average" so that our representation statistic adds up to 100% when you sum the percentage represented by yeas, nays, and other types of votes.
 
+<<<<<<< HEAD
+=======
+### Calculation bipartianship percentage
+
+The bipartisanship percentage is taken as the ratio of the number of yea votes from the minority party on a single vote to the number of yea votes from the majority party on a single vote. Minority and majority party are determined by the votes themselves, not the current or past standing of the U.S. Senate. Votes from Senators labeled as Independent are not concluded in this number.
+
+Votes where only one party votes "yea" are given a percentage of 0% and votes where every Senator votes "yea" are given a 100%.
+
+>>>>>>> main
 ## Setting Me Up
 
-### Requirements 
+### Requirements
 I can be run from a command line, but I prefer to be hosted somewhere. I’m currently configured by my maker to use Amazon Web Services. Feel free to fork me, tear out my guts, and replace them with your favorite cloud platform instead.
 
 I also store a running memory of my tweets in a CSV file. By default, this file is hosted on an AWS S3 bucket.
@@ -56,7 +65,7 @@ You can run me with the following command:
 python bot.py
 ```
 
-Assuming everything is properly configured, I should tweet summaries of every vote taken in the Senate for the current session. 
+Assuming everything is properly configured, I should tweet summaries of every vote taken in the Senate for the current session.
 
 ### Advanced config/features
 I’m not really a bot if I don’t run without a human instructing me what to do. In order to bring me to life, you will need to set up AWS Lambda and deploy me to that service. That is beyond the scope of this document, so please see the AWS Lambda documentation for more details.
