@@ -126,7 +126,7 @@ class SenateData():
         return vote_dict
 
     def process_detail_text(self, vote_rep, party_rep):
-        """ Takes representation and party counts and cleans them for text. """      
+        """ Takes representation and party counts and cleans them for text. """
         text = ""
 
         for v in ["yea", "nay", "abstain"]:
@@ -147,7 +147,7 @@ class SenateData():
                 li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             else:
                 li = f"{v.title()}s: {p} of the country represented by {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
-                
+
             text += f"→ {li}"
             text += "\n\n"
 
@@ -174,7 +174,7 @@ class SenateData():
             """ Helper function for process_vote_text. """
             text = ""
             # TODO: make these separate functions? 
-            if question == "motion":       
+            if question == "motion":
                 if len(vote_question.split()) > 3:
                     text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
                 else:
