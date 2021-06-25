@@ -18,15 +18,6 @@ To calculate representation, a state's population is added each time a Senator f
 
 I calculate the population in this way and calculate a "weighted average" so that our representation statistic adds up to 100% when you sum the percentage represented by yeas, nays, and other types of votes.
 
-<<<<<<< HEAD
-=======
-### Calculation bipartianship percentage
-
-The bipartisanship percentage is taken as the ratio of the number of yea votes from the minority party on a single vote to the number of yea votes from the majority party on a single vote. Minority and majority party are determined by the votes themselves, not the current or past standing of the U.S. Senate. Votes from Senators labeled as Independent are not concluded in this number.
-
-Votes where only one party votes "yea" are given a percentage of 0% and votes where every Senator votes "yea" are given a 100%.
-
->>>>>>> main
 ## Setting Me Up
 
 ### Requirements
