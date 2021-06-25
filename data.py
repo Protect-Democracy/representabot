@@ -211,7 +211,7 @@ class SenateData:
                 )
                 text += f"The nomination for {nominee} ({vote_issue}) was {vote_result}"
             elif question == "veto":
-                text += f"The veto on {vote_issue} was {vote_result[6:]}"
+                text += f"The veto on {vote_issue} was {vote_result[5:]}"
 
             return text
 
