@@ -66,11 +66,14 @@ def create_api():
 
 def load():
     """Load previous tweet data file from Google Cloud"""
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=AWS_ACCESS_KEY,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+    if AWS_ACCESS_KEY:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        )
+    else:
+        s3 = boto3.client("s3")
 
     response = s3.get_object(Bucket=AWS_BUCKET_NAME, Key="tweets.csv")
 
@@ -117,7 +120,7 @@ def save(df):
         # df.to_csv(OBJ_FILENAME, index=False)
 
 
-def run(request):
+def run():
     """Read a list of previous tweets from Google Cloud Storage
     and Senate roll call vote data. Tweets out any untweeted
     votes based on the functions contained in data.py.
@@ -176,5 +179,10 @@ def run(request):
         return "{}"  # Empty JSON object
 
 
+def lambda_handler(event, context):
+    result = run()
+    return {"statusCode": 200, "body": json.dumps(result)}
+
+
 if __name__ == "__main__":
-    run(None)
+    run()
