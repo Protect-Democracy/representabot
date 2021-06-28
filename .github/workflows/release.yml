@@ -52,11 +52,8 @@ jobs:
 
       - name: Deploy image to AWS Lambda
         id: deploy-image
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          function-name: rep-test
-          image-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ steps.login-ecr.outputs.registry }}:${{ github.event.release.tag_name }}
+        env:
+          FUNCTION_NAME: rep-test
+          IMAGE_URI: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ steps.login-ecr.outputs.registry }}:${{ github.event.release.tag_name }}
         run: |
-          aws lambda update-function-code
+          aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $IMAGE_URI
