@@ -64,16 +64,21 @@ def create_api():
     return api
 
 
-def load():
-    """Load previous tweet data file from Google Cloud"""
+def get_s3_client():
     if AWS_ACCESS_KEY:
-        s3 = boto3.client(
+        s3_client = boto3.client(
             "s3",
             aws_access_key_id=AWS_ACCESS_KEY,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         )
     else:
         s3 = boto3.client("s3")
+    return s3_client
+
+
+def load():
+    """Load previous tweet data file from Google Cloud"""
+    s3 = get_s3_client()
 
     response = s3.get_object(Bucket=AWS_BUCKET_NAME, Key="tweets.csv")
 
@@ -92,11 +97,7 @@ def load():
 def save(df):
     """Write tweet data back to Google Cloud"""
     try:
-        s3 = boto3.client(
-            "s3",
-            aws_access_key_id=AWS_ACCESS_KEY,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        )
+        s3 = get_s3_client()
         with io.StringIO() as csv_buffer:
             df.sort_values(by=["congress", "session", "vote"], inplace=True)
             df.to_csv(csv_buffer, index=False)
