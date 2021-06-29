@@ -88,19 +88,42 @@ class Representabot:
 
     def __load(self):
         """Load previous tweet data file from Google Cloud"""
-        response = self.s3_client.get_object(
-            Bucket=self.AWS_BUCKET_NAME, Key="tweets.csv"
-        )
+        try:
+            response = self.s3_client.get_object(
+                Bucket=self.AWS_BUCKET_NAME, Key="tweets.csv"
+            )
+        except self.s3_client.exceptions.NoSuchKey as e:
+            logging.error(
+                "No Such Key: S3 bucket "
+                f"{self.AWS_BUCKET}/{self.OBJ_FILENAME}"
+            )
+            raise e
+        except self.s3_client.exceptions.InvalidObjectState as e:
+            logging.error(
+                "Invalid Object State: S3 bucket "
+                f"{self.AWS_BUCKET}/{self.OBJ_FILENAME}"
+            )
+            raise e
 
         status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
 
         if status == 200:
             tweets = pd.read_csv(response.get("Body"), dtype=self.DTYPES)
+        elif status == 403:
+            logging.error(
+                "Access Denied: S3 bucket "
+                f"{self.AWS_BUCKET}/{self.OBJ_FILENAME}"
+            )
+            raise PermissionError("Access Denied")
+        elif status == 404:
+            logging.error(
+                "No Such Key: S3 bucket "
+                f"{self.AWS_BUCKET}/{self.OBJ_FILENAME}"
+            )
+            raise self.s3_client.exceptions.NoSuchKey("No Such Key")
         else:
-            # TODO: Improve exception handling by breaking out various
-            # potential errors.
             logging.warning(f"Status: {status}")
-            raise Exception("Unable to open resource")
+            raise RuntimeError("Unable to open resource")
         return tweets
 
     def __save(self, df):
