@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.3.2-beta] - 2021-06-29
 ### Added
 - This CHANGELOG, TERMS, and CONTRIBUTING documentation to support open sourcing this project (representabot#17).
+- Basic unit tests for data.py — it's a start! (representabot#19).
 
 ### Changed
 - Made maximum number of tweets per run configurable with `MAX_TWEETS` environment variable.
