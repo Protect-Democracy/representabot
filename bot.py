@@ -47,7 +47,7 @@ class Representabot:
         self.session = session
         self.twitter_api = self.__create_api()
         self.s3_client = self.__get_s3_client()
-        self.tweets = self.load()
+        self.tweets = self.__load()
         self.senate_obj = cd.SenateData(congress, session)
         self.senate_data = self.senate_obj.get_senate_list()
 
@@ -85,7 +85,7 @@ class Representabot:
             s3_client = boto3.client("s3")
         return s3_client
 
-    def load(self):
+    def __load(self):
         """Load previous tweet data file from Google Cloud"""
         response = self.s3_client.get_object(
             Bucket=self.AWS_BUCKET_NAME, Key="tweets.csv"
@@ -102,7 +102,7 @@ class Representabot:
             raise Exception("Unable to open resource")
         return tweets
 
-    def save(self, df):
+    def __save(self, df):
         """Write tweet data back to Google Cloud"""
         try:
             with io.StringIO() as csv_buffer:
@@ -181,7 +181,7 @@ class Representabot:
 
         if not new_tweets.empty:
             logging.info(f"Tweeted {len(new_tweets)} new votes")
-            self.save(self.tweets.append(new_tweets))
+            self.__save(self.tweets.append(new_tweets))
             # Function needs to return something to work as a Cloud Function
             return new_tweets["tweet_id"].to_json()
         else:
