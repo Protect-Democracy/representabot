@@ -183,9 +183,17 @@ class SenateData:
             """Helper function for process_vote_text."""
             text = ""
             # TODO: make these separate functions?
-            if question == "motion":
+            if question == "motion":       
                 if len(vote_question.split()) > 3:
-                    text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
+                    if "PN" in vote_issue:
+                        nominee = process_name(
+                            vote_detail["roll_call_vote"]["vote_document_text"]
+                        )
+                        text += f"{vote_question.capitalize()} the {nominee} nomination was {vote_result}"
+                    elif "amdt" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                        text += f"{vote_question.capitalize()} (an amendment to {vote_issue}) was {vote_result}"
+                    else:
+                        text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
                 else:
                     text += f"{vote_question.capitalize()}"
                     if "PN" in vote_issue:
@@ -193,6 +201,12 @@ class SenateData:
                             vote_detail["roll_call_vote"]["vote_document_text"]
                         )
                         text += f" on nominating {nominee} "
+                    elif "waive" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                        text += " to waive "
+                        if "amdt" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                            text += f"re: an Amdt. to {vote_issue} "
+                        else:
+                            text += f""
                     else:
                         text += f" for {vote_issue} "
                     text += f"was {vote_result}"
@@ -209,7 +223,7 @@ class SenateData:
                 nominee = process_name(
                     vote_detail["roll_call_vote"]["vote_document_text"]
                 )
-                text += f"The nomination for {nominee} ({vote_issue}) was {vote_result}"
+                text += f"The nomination for {nominee} was {vote_result}"
             elif question == "veto":
                 text += f"The veto on {vote_issue} was {vote_result[5:]}"
 
@@ -244,6 +258,9 @@ class SenateData:
             vote_question = vote_question["#text"]
         else:
             vote_question = vote_question
+            
+        if vote_question is None:
+            raise DoNotTweetException
 
         vote_question = vote_question.lower()[3:]
         vote_question = (
@@ -292,8 +309,8 @@ class SenateData:
 if __name__ == "__main__":
     senate_obj = SenateData(CONGRESS_NUMBER, SENATE_SESSION)
     senate_data = senate_obj.get_senate_list()
-    chars = []
-    exs = []
+    examples = []
+    tweets = []
 
     for item in senate_data["vote_summary"]["votes"]["vote"]:
         try:
@@ -302,18 +319,23 @@ if __name__ == "__main__":
                 q = item["question"]["#text"]
             else:
                 q = item["question"]
-            if q not in exs:
-                chars.append(len(tweet))
-                print(tweet)
-                print("\n")
-                print(q)
-                print("\n")
-                exs = exs + [q]
+            if q not in examples:
+                tweets = tweets + [tweet]
+                examples = examples + [q]
+                result = f"[{q}]:\n\n{tweet}\n\n"
+                print(result)
         except DoNotTweetException:
             pass
-
-    charlen = pd.Series(chars)
+    # check to see if format meets current length limits on twitter
+    # and if longest tweet fits 
+    sample_tweet = pd.DataFrame({"question": examples, "tweet": tweets})
+    sample_tweet["tweet_len"] = sample_tweet["tweet"].map(len)
+    longest_tweet = sample_tweet["tweet"][sample_tweet.tweet_len.argmax()]
     result = (
-        f"mean: {charlen.mean()}, max: {charlen.max()}, min: {charlen.min()}"
+        "maximum tweet character length: ~365\n"
+        f"mean length: {round(sample_tweet.tweet_len.mean())}\n"
+        f"max length: {sample_tweet.tweet_len.max()}\n"
+        f"min length: {sample_tweet.tweet_len.min()}\n"
+        f"longest tweet from this group:\n\n{longest_tweet}"
     )
     print(result)
