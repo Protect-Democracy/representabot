@@ -20,6 +20,7 @@ class Representabot:
     AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY")
     AWS_BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    MAX_TWEETS = os.environ.get("MAX_TWEETS", 4)
     OBJ_FILENAME = os.environ.get("OBJ_FILENAME")
 
     DTYPES = {
@@ -175,8 +176,8 @@ class Representabot:
                     logging.error(text)
                     logging.error(e)
 
-            # Only process a maximum of four (4) tweets in a single run
-            if len(new_tweets) == 4:
+            # Only process a limited number of tweets in a single run
+            if len(new_tweets) == self.MAX_TWEETS:
                 break
 
         if not new_tweets.empty:
