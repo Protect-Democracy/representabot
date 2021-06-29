@@ -15,8 +15,8 @@ import data as cd
 dotenv.load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-AWS_BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
 AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY")
+AWS_BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 OBJ_FILENAME = os.environ.get("OBJ_FILENAME")
 
@@ -120,24 +120,22 @@ def save(df):
         # df.to_csv(OBJ_FILENAME, index=False)
 
 
-def run():
-    """Read a list of previous tweets from Google Cloud Storage
+def run(congress, session):
+    """Read a list of previous tweets from Cloud Storage
     and Senate roll call vote data. Tweets out any untweeted
     votes based on the functions contained in data.py.
-    Parameter is required by Google Cloud Functions and not
-    used.
     """
     api = create_api()
     tweets = load()
-    senate_obj = cd.SenateData(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
+    senate_obj = cd.SenateData(congress, session)
     senate_data = senate_obj.get_senate_list()
     new_tweets = pd.DataFrame(
         columns=["tweet_id", "congress", "session", "date", "vote"], dtype=str
     )
     for item in senate_data["vote_summary"]["votes"]["vote"]:
         query = (
-            "congress == @cd.CONGRESS_NUMBER "
-            "and session == @cd.SENATE_SESSION "
+            "congress == @congress "
+            "and session == @session "
             "and date == @item['vote_date'] "
             "and vote == @item['vote_number']"
         )
@@ -152,8 +150,8 @@ def run():
                 new_tweets = new_tweets.append(
                     {
                         "tweet_id": status.id_str,
-                        "congress": cd.CONGRESS_NUMBER,
-                        "session": cd.SENATE_SESSION,
+                        "congress": congress,
+                        "session": session,
                         "date": item["vote_date"],
                         "vote": item["vote_number"],
                         **party_data,
@@ -174,15 +172,20 @@ def run():
         logging.info(f"Tweeted {len(new_tweets)} new votes")
         save(tweets.append(new_tweets))
         # Function needs to return something to work as a Google Cloud Function
-        return json.dumps(new_tweets["tweet_id"].to_json())
+        return new_tweets["tweet_id"].to_json()
     else:
         return "{}"  # Empty JSON object
 
 
 def lambda_handler(event, context):
-    result = run()
-    return {"statusCode": 200, "body": json.dumps(result)}
+    try:
+        result = run(event["congress"], event["session"])
+        return {"statusCode": 200, "body": json.dumps(result)}
+    except Exception as e:
+        logging.error("Error in processing request")
+        logging.error(e)
+        return {"statusCode": 404}
 
 
 if __name__ == "__main__":
-    run()
+    run(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
