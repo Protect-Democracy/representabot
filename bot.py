@@ -182,10 +182,11 @@ def lambda_handler(event, context):
     try:
         result = run(event["congress"], event["session"])
         return {"statusCode": 200, "body": json.dumps(result)}
-    except Exception as e:
-        logging.error("Error in processing request")
-        logging.error(e)
-        raise e
+    except KeyError as e:
+        return {
+            "statusCode": 404,
+            "body": f'KeyError: {e}, must have "congress" and "session" keys in request',
+        }
 
 
 if __name__ == "__main__":
