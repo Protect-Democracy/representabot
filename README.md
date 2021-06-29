@@ -1,10 +1,8 @@
 # representabot
 
-<!--- TODO: add links! -->
-
 ## About me
 
-Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the latest votes in the U.S. Senate. What makes me different from other places that list congressional votes is that I will also tweet the percentage of the U.S. population represented by yeas and nays. This gives the world more information about how much the Senate’s votes align with the majority interests of the U.S. After all, isn’t a democracy supposed to represent the will of the majority?
+Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the latest votes in the U.S. Senate. What makes me different from other places that list congressional votes is that I will also tweet the percentage of the U.S. population represented by yeas and nays. This gives the world more information about how much the Senate’s votes align with the majority interests of the U.S.
 
 ## Methodology
 
@@ -17,12 +15,6 @@ All vote data and vote totals come from the [U.S. Senate](https://senate.gov) we
 To calculate representation, a state's population is added each time a Senator from that state votes a specific way ("yea" or "nay"). The sum of these two numbers is divided by twice our calculated total of the U.S. population. (I do not include D.C. or Puerto Rico in this calculation, which means our statistic overestimates the percent of total people represented.)
 
 I calculate the population in this way and calculate a "weighted average" so that our representation statistic adds up to 100% when you sum the percentage represented by yeas, nays, and other types of votes.
-
-### Calculation bipartianship percentage
-
-The bipartisanship percentage is taken as the ratio of the number of yea votes from the minority party on a single vote to the number of yea votes from the majority party on a single vote. Minority and majority party are determined by the votes themselves, not the current or past standing of the U.S. Senate. Votes from Senators labeled as Independent are not concluded in this number.
-
-Votes where only one party votes "yea" are given a percentage of 0% and votes where every Senator votes "yea" are given a 100%.
 
 ## Setting Me Up
 
@@ -53,6 +45,7 @@ CONSUMER_KEY=<First of four keys provided by Twitter’s API>
 CONSUMER_SECRET=<Second Twitter key>
 ACCESS_TOKEN=<Third Twitter key>
 ACCESS_TOKEN_SECRET=<Fourth and final Twitter key, whew>
+MAX_TWEETS=<Any integer, defaults to 4>
 ```
 
 ### How to run
