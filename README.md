@@ -1,10 +1,8 @@
 # representabot
 
-<!--- TODO: add links! -->
-
 ## About me
 
-Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the latest votes in the U.S. Senate. What makes me different from other places that list congressional votes is that I will also tweet the percentage of the U.S. population represented by yeas and nays. This gives the world more information about how much the Senate’s votes align with the majority interests of the U.S. 
+Hi, I am `representabot`. I am a Twitter Bot that tweets regular updates of the latest votes in the U.S. Senate. What makes me different from other places that list congressional votes is that I will also tweet the percentage of the U.S. population represented by yeas and nays. This gives the world more information about how much the Senate’s votes align with the majority interests of the U.S.
 
 ## Methodology
 
@@ -47,6 +45,7 @@ CONSUMER_KEY=<First of four keys provided by Twitter’s API>
 CONSUMER_SECRET=<Second Twitter key>
 ACCESS_TOKEN=<Third Twitter key>
 ACCESS_TOKEN_SECRET=<Fourth and final Twitter key, whew>
+MAX_TWEETS=<Any integer, defaults to 4>
 ```
 
 ### How to run
