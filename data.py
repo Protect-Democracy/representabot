@@ -183,14 +183,17 @@ class SenateData:
             """Helper function for process_vote_text."""
             text = ""
             # TODO: make these separate functions?
-            if question == "motion":       
+            if question == "motion":
                 if len(vote_question.split()) > 3:
                     if "PN" in vote_issue:
                         nominee = process_name(
                             vote_detail["roll_call_vote"]["vote_document_text"]
                         )
                         text += f"{vote_question.capitalize()} the {nominee} nomination was {vote_result}"
-                    elif "amdt" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                    elif (
+                        "amdt"
+                        in vote_detail["roll_call_vote"]["vote_title"].lower()
+                    ):
                         text += f"{vote_question.capitalize()} (an amendment to {vote_issue}) was {vote_result}"
                     else:
                         text += f"{vote_question.capitalize()} ({vote_issue}) was {vote_result}"
@@ -201,9 +204,17 @@ class SenateData:
                             vote_detail["roll_call_vote"]["vote_document_text"]
                         )
                         text += f" on nominating {nominee} "
-                    elif "waive" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                    elif (
+                        "waive"
+                        in vote_detail["roll_call_vote"]["vote_title"].lower()
+                    ):
                         text += " to waive "
-                        if "amdt" in vote_detail["roll_call_vote"]["vote_title"].lower():
+                        if (
+                            "amdt"
+                            in vote_detail["roll_call_vote"][
+                                "vote_title"
+                            ].lower()
+                        ):
                             text += f"re: an Amdt. to {vote_issue} "
                         else:
                             text += f""
@@ -258,17 +269,21 @@ class SenateData:
             vote_question = vote_question["#text"]
         else:
             vote_question = vote_question
-            
+
         if vote_question is None:
             raise DoNotTweetException
 
         vote_question = vote_question.lower()[3:]
         vote_question = (
-            vote_question[: vote_question.find("(")-1]
+            vote_question[: vote_question.find("(") - 1]
             if vote_question.find("(") > 0
             else vote_question
         )
-        vote_question = "the " + vote_question if vote_question[:3] != "the" else vote_question
+        vote_question = (
+            "the " + vote_question
+            if vote_question[:3] != "the"
+            else vote_question
+        )
 
         # votes without an "issue" don't have a subject
         # this was an odd edge case that's accounted for here
@@ -327,7 +342,7 @@ if __name__ == "__main__":
         except DoNotTweetException:
             pass
     # check to see if format meets current length limits on twitter
-    # and if longest tweet fits 
+    # and if longest tweet fits
     sample_tweet = pd.DataFrame({"question": examples, "tweet": tweets})
     sample_tweet["tweet_len"] = sample_tweet["tweet"].map(len)
     longest_tweet = sample_tweet["tweet"][sample_tweet.tweet_len.argmax()]
