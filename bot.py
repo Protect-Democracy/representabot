@@ -185,7 +185,7 @@ def lambda_handler(event, context):
     except Exception as e:
         logging.error("Error in processing request")
         logging.error(e)
-        return {"statusCode": 404}
+        raise e
 
 
 if __name__ == "__main__":
