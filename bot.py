@@ -72,7 +72,7 @@ def get_s3_client():
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         )
     else:
-        s3 = boto3.client("s3")
+        s3_client = boto3.client("s3")
     return s3_client
 
 
