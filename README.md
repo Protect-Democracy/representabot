@@ -25,6 +25,10 @@ I also store a running memory of my tweets in a CSV file. By default, this file 
 
 See [AWS documentation](https://docs.aws.amazon.com/index.html) for more details on setting up AWS. You’ll need to look at [Lambda](https://docs.aws.amazon.com/lambda/) and [S3](https://docs.aws.amazon.com/s3/) in particular.
 
+I also need access to a Twitter account and their developer API. This comes in the form of four tokens: a consumer key, a consumer secret, an access token, and an access token secret. You can generate these for me from the [Twitter Developer Platform](https://developer.twitter.com).
+
+Finally, I also require access to US Census data via their [Census API](https://www.census.gov/data/developers.html). You can [request a key](https://api.census.gov/data/key_signup.html) from the [US Census website](https://www.census.gov).
+
 ### Configuration
 I use environment variables to run, which can be set in the AWS Lambda setup. Here's what I need. (See `env.sample` in the repo as well)
 
@@ -48,16 +52,29 @@ ACCESS_TOKEN_SECRET=<Fourth and final Twitter key, whew>
 MAX_TWEETS=<Any integer, defaults to 4>
 ```
 
-### How to run
+### Usage
 You can run me with the following command:
 
 ```
 python bot.py
 ```
 
-Assuming everything is properly configured, I should tweet summaries of every vote taken in the Senate for the current session.
+Assuming everything is properly configured, I should tweet summaries of votes taken in the Senate for the current session.
 
 ### Advanced config/features
 I’m not really a bot if I don’t run without a human instructing me what to do. In order to bring me to life, you will need to set up AWS Lambda and deploy me to that service. That is beyond the scope of this document, so please see the AWS Lambda documentation for more details.
 
 You can also fool me into skipping votes by adding details to the CSV "database". If you don't want me to tweet about certain votes, just add fake entries to the database. I won’t be mad.
+
+## Getting Help
+If you have questions, concerns, bug reports, etc., please file an issue in this repository's [Issue Tracker](https://github.com/Protect-Democracy/representabot/issues).
+
+## Getting Involved
+See my instructions in [CONTRIBUTING](CONTRIBUTING.md).
+
+
+----
+
+## Open source licensing info
+1. [TERMS](TERMS.md)
+2. [LICENSE](LICENSE)
