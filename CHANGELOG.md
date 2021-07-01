@@ -17,3 +17,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made maximum number of tweets per run configurable with `MAX_TWEETS` environment variable.
 - More improvements to the tweet format and text (representabot#16).
 - Better exception handling for failed S3 bucket access (representabot#18).
+- Move code into a sub-folder to conform to standard python packaging norms.
