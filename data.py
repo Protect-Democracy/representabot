@@ -12,17 +12,7 @@ from us import states
 
 dotenv.load_dotenv()
 CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY")
-CONGRESS_NUMBER = os.environ.get("CONGRESS_NUMBER")
-SENATE_SESSION = os.environ.get("SENATE_SESSION")
 CENSUS_POPULATION_CODE = "B01003_001E"
-QUESTIONS = [
-    "motion",
-    "bill",
-    "amendment",
-    "resolution",
-    "nomination",
-    "veto",
-]
 
 
 def flatten(current: dict, key: str = None, result: dict = {}):
@@ -41,6 +31,15 @@ class DoNotTweetException(Exception):
 
 
 class SenateData:
+    QUESTIONS = [
+        "motion",
+        "bill",
+        "amendment",
+        "resolution",
+        "nomination",
+        "veto",
+    ]
+
     def __init__(self, congress_num, session_num):
         c = Census(CENSUS_API_KEY)
         state_pop_data = c.acs5.state(
@@ -166,7 +165,7 @@ class SenateData:
         """Creates a source link to the senate.gov website."""
         url = (
             "https://www.senate.gov/legislative/LIS/roll_call_lists/roll_call_vote_cfm.cfm?"
-            f"congress={CONGRESS_NUMBER}&session={SENATE_SESSION}&vote={vote_number}"
+            f"congress={self.congress_num}&session={self.session_num}&vote={vote_number}"
         )
         return url
 
@@ -296,7 +295,7 @@ class SenateData:
         else:
             q = [
                 question
-                for question in QUESTIONS
+                for question in self.QUESTIONS
                 if (question in vote_question)
             ]
             if q:
@@ -322,7 +321,7 @@ class SenateData:
 
 
 if __name__ == "__main__":
-    senate_obj = SenateData(CONGRESS_NUMBER, SENATE_SESSION)
+    senate_obj = SenateData("117", "1")
     senate_data = senate_obj.get_senate_list()
     examples = []
     tweets = []
