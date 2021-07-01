@@ -1,6 +1,6 @@
 import pytest
 
-import representabot.data as cd
+import data as cd
 
 
 def test_senate_data():

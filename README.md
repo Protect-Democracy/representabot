@@ -56,13 +56,13 @@ MAX_TWEETS=<Any integer, defaults to 4>
 You can run me with the following command:
 
 ```
-python representabot/bot.py --congress <congress number> --session <senate session>
+python bot.py --congress <congress number> --session <senate session>
 ```
 
 E.g.
 
 ```
-python representabot/bot.py --congress 117 --session 1
+python bot.py --congress 117 --session 1
 ```
 
 Assuming everything is properly configured, I should tweet summaries of votes taken in the Senate for the current session.
