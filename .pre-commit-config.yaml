@@ -15,13 +15,6 @@ repos:
   - id: mixed-line-ending
     args: ['--fix=auto']  # replace 'auto' with 'lf' to enforce Linux/Mac line endings or 'crlf' for Windows
 
-# Format code
-- repo: https://github.com/psf/black
-  rev: 21.6b0
-  hooks:
-  - id: black
-    language_version: python3
-
 # Run unit tests
 - repo: local
   hooks:
@@ -31,3 +24,10 @@ repos:
       language: system
       pass_filenames: false
       always_run: true
+
+# Format code
+- repo: https://github.com/psf/black
+  rev: 21.6b0
+  hooks:
+  - id: black
+    language_version: python3

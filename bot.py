@@ -1,3 +1,4 @@
+import argparse
 import io
 import json
 import logging
@@ -225,5 +226,19 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    repbot = Representabot(cd.CONGRESS_NUMBER, cd.SENATE_SESSION)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--congress",
+        type=str,
+        required=True,
+        help="Congress to process, e.g. 117",
+    )
+    parser.add_argument(
+        "--session",
+        type=str,
+        required=True,
+        help="Session of the Senate to process, e.g. 1",
+    )
+    args = parser.parse_args()
+    repbot = Representabot(args.congress, args.session)
     repbot.run()
