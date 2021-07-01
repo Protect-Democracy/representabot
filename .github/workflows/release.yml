@@ -52,7 +52,6 @@ jobs:
       - name: Deploy image to AWS Lambda
         id: deploy-image
         env:
-          FUNCTION_NAME: rep-test
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.release.tag_name }}
         run: |
-          aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $IMAGE_URI
+          aws lambda update-function-code --function-name ${{ secrets.AWS_LAMBDA_FUNCTION_NAME }} --image-uri $IMAGE_URI
