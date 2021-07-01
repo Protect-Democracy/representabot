@@ -21,7 +21,7 @@ I calculate the population in this way and calculate a "weighted average" so tha
 ### Requirements
 I can be run from a command line, but I prefer to be hosted somewhere. I’m currently configured by my maker to use Amazon Web Services. Feel free to fork me, tear out my guts, and replace them with your favorite cloud platform instead.
 
-I also store a running memory of my tweets in a CSV file. By default, this file is hosted on an AWS S3 bucket.
+I also store a running memory of my tweets in a CSV file. By default, this file is hosted on an AWS S3 bucket. There is an [empty version of this file][data/tweets.csv] in the repository for you to start with.
 
 See [AWS documentation](https://docs.aws.amazon.com/index.html) for more details on setting up AWS. You’ll need to look at [Lambda](https://docs.aws.amazon.com/lambda/) and [S3](https://docs.aws.amazon.com/s3/) in particular.
 
