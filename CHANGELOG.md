@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2021-07-07
+### Changed
+- Added emojis to liven up the tweets a little bit.
+- Some tweaks to the documentation to make sure it's up to date.
+
 ## [v1.0.0] - 2021-07-01
 ### Added
 - This CHANGELOG, TERMS, and CONTRIBUTING documentation to support open sourcing this project (representabot#17).
