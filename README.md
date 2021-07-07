@@ -41,8 +41,6 @@ OBJ_FILENAME=<CSV filename, e.g. tweets.csv>
 
 # Census data
 CENSUS_API_KEY=<API key from the US Census API>
-CONGRESS_NUMBER=<Congress number you wish to process, e.g. 117>
-SENATE_SESSION=<Senate session you wish to process, e.g. 1>
 
 # Twitter
 CONSUMER_KEY=<First of four keys provided by Twitter’s API>
