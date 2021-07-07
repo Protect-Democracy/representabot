@@ -150,13 +150,12 @@ class SenateData:
                 votes = "votes"
 
             if v == "abstain":
-                li = f"No vote: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
+                li = f"😶 No vote: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             elif v == "nay":
-                li = f"{v.title()}s: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
+                li = f"❎ {v.title()}s: {p} ... {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
             else:
-                li = f"{v.title()}s: {p} of the country represented by {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
+                li = f"✅ {v.title()}s: {p} of the country represented by {total_vote} {votes} ({d_vote}-D, {r_vote}-R, {i_vote}-I)"
 
-            text += f"→ {li}"
             text += "\n\n"
 
         return text
