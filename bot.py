@@ -88,7 +88,7 @@ class Representabot:
         return s3_client
 
     def __load(self):
-        """Load previous tweet data file from Google Cloud"""
+        """Load previous tweet data file from AWS"""
         try:
             response = self.s3_client.get_object(
                 Bucket=self.AWS_BUCKET_NAME, Key="tweets.csv"
