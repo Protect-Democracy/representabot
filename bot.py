@@ -197,7 +197,7 @@ class Representabot:
                 except Exception as e:
                     # Tweet failed for some reason
                     logging.error("Tweet failed")
-                    logging.error(text)
+                    logging.error(item)
                     logging.error(e)
 
             # Only process a limited number of tweets in a single run
