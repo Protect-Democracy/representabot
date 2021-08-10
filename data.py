@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import requests
 
@@ -66,7 +67,8 @@ class SenateData:
             "https://www.senate.gov/legislative/LIS/roll_call_lists/"
             f"vote_menu_{self.congress_num}_{self.session_num}.xml"
         )
-        resp_data = requests.get(url)
+        headers = {"user-agent": "representabot"}
+        resp_data = requests.get(url, headers=headers)
         return xmltodict.parse(resp_data.content)
 
     def get_senate_vote(self, vote_num):
@@ -76,7 +78,8 @@ class SenateData:
             f"vote{self.congress_num}{self.session_num}/"
             f"vote_{self.congress_num}_{self.session_num}_{vote_num}.xml"
         )
-        resp_data = requests.get(url)
+        headers = {"user-agent": "representabot"}
+        resp_data = requests.get(url, headers=headers)
         return xmltodict.parse(resp_data.content)
 
     def get_voters(self, vote_members):
