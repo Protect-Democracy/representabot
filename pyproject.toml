@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "representabot"
-version = "1.0.0"
+version = "1.0.3"
 description = "A Twitter bot that tweets about US Senate votes"
 authors = [
     "Delaney Gomen <delaney.goman@protectdemocracy.org>",
