@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.3] - 2021-08-10
+### Fixed
+- Minor fix to error handling
+
 ## [v1.0.2] - 2021-08-10
 ### Fixed
 - Bug causing app to crash due to missing request header
